@@ -1,0 +1,8 @@
+{
+  "properties": [
+    {
+      "name": "spring.application.password",
+      "type": "java.lang.String",
+      "description": "Description for spring.application.password."
+  }
+] }
