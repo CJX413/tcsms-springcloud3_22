@@ -13,10 +13,6 @@ import javax.persistence.*;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Integer id;
-
     @Column(name = "username")
     private String username;
 
@@ -25,12 +21,14 @@ public class User {
 
     @Column(name = "role")
     private String role;
+    @OneToOne
+    @JoinColumn(name="username")
+    private UserInfo userInfo;
 
     @Override
     public String toString() {
         return "{" +
-                "'id':" + id +
-                ", 'username':" + "\'" + username + "\'" +
+                "'username':" + "\'" + username + "\'" +
                 ", 'password':" + "\'" + password + "\'" +
                 ", 'role':" + "\'" + role + "\'" +
                 "}";

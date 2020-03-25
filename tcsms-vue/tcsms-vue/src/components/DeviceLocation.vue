@@ -81,10 +81,7 @@
       initPage() {
         this.axios.post('/deviceInfo', {})
           .then((response) => {
-            console.log(response);
-            console.log(response);
             this.deviceList = response.data;
-            console.log(response.data);
           });
       },
     },

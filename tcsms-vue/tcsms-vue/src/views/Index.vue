@@ -35,7 +35,7 @@
           </el-col>
           <el-col :span="2">
             <el-menu-item index="3">
-              <el-link type="primary" href="/admin">管理系统</el-link>
+              <el-link type="primary" v-admin="()=>{this.$router.push({path:'/admin'})}">管理系统</el-link>
             </el-menu-item>
           </el-col>
         </el-row>
@@ -52,7 +52,7 @@
             <i class="el-icon-location"></i>
             <span>设备位置</span>
           </el-menu-item>
-          <el-menu-item index="2">
+          <el-menu-item index="2" v-monitor="()=>{this.componentType=video-monitor}">
             <i class="el-icon-view"></i>
             <span>视频监控</span>
           </el-menu-item>
@@ -60,23 +60,20 @@
             <i class="el-icon-coordinate"></i>
             <span>注册驾驶员</span>
           </el-menu-item>
-          <el-menu-item index="4">
+          <el-menu-item index="4" v-monitor="()=>{this.componentType='video-playback'}">
             <i class="el-icon-video-camera-solid"></i>
             <span>监控回放</span>
           </el-menu-item>
         </el-menu>
       </el-aside>
       <el-main style="padding-top: 0px">
-        <component v-if="componentType==='video-monitor'||componentType==='video-playback'" v-bind:is="componentType"
-                   v-role="'isMonitor'"></component>
-        <component v-else v-bind:is="componentType"></component>
+        <component v-bind:is="componentType"></component>
       </el-main>
     </el-container>
   </el-container>
 </template>
 
 <script>
-
   export default {
     name: "Index",
     components: {
@@ -119,9 +116,7 @@
       initPage() {
         this.axios.post('/userInfo', {})
           .then((response) => {
-            let userInfo = response.data;
-            localStorage.setItem('username', userInfo.username);
-            this.name = userInfo.name;
+            this.name = response.data.name;
             this.$store.commit('CONNET_WEBSOCKET');
           });
       },
@@ -157,19 +152,22 @@
             this.componentType = 'device-location';
             break;
           case "2":
-            this.componentType = 'video-monitor';
+
             break;
           case "3":
             this.componentType = 'operator-page';
             break;
           case "4":
-            this.componentType = 'video-playback';
+
             break;
           case "5":
             break;
           default:
         }
       },
+      index4() {
+        this.componentType = 'video-playback';
+      }
     },
   }
 </script>

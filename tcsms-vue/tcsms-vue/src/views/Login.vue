@@ -14,7 +14,7 @@
       <el-form-item label="密码:" prop="loginPassword">
         <el-col :span="22">
           <el-input type="password" v-model="loginForm.loginPassword"
-                    oninput ="value=value.replace(/[^\a-\z\A-\Z0-9]/g, '')"></el-input>
+                    oninput="value=value.replace(/[^\a-\z\A-\Z0-9]/g, '')"></el-input>
         </el-col>
       </el-form-item>
       <el-row style="text-align: right">
@@ -74,19 +74,21 @@
             username: this.loginForm.loginName,
             password: this.loginForm.loginPassword,
             rememberMe: this.rememberMe,
-          })
-            .then((response) => {
-              console.log(response);
-              let res = response.data;
-              if (res.code === 200) {
-                localStorage.setItem('token', res.token);
-                this.$router.push({path: '/index'});
-              } else {
-                this.$alert(res.message, '登录失败', {
-                  confirmButtonText: '确定',
-                });
-              }
-            });
+          }).then(response => {
+            console.log(response);
+            let res = response.data;
+            console.log(res.message);
+            if (res.success === true) {
+              console.log(res.message);
+              localStorage.setItem('username', res.message);
+              localStorage.setItem('token', res.token);
+              this.$router.push({path: '/index'});
+            } else {
+              this.$alert(res.message, '登录失败', {
+                confirmButtonText: '确定',
+              });
+            }
+          });
         }
       },
     }

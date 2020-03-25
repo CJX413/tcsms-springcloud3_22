@@ -10,7 +10,7 @@ public class LoginJSON {
 
     }
 
-    public LoginJSON(Integer code, String token, Boolean success, String massege) {
+    public LoginJSON(Integer code, String token, Boolean success, String message) {
         this.code = code;
         this.token = token;
         this.success = success;

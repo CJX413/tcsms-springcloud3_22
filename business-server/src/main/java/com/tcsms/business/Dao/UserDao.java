@@ -5,7 +5,7 @@ import org.springframework.data.repository.CrudRepository;
 
 import java.util.List;
 
-public interface UserDao extends CrudRepository<User, Integer> {
+public interface UserDao extends CrudRepository<User, String> {
     User findByUsername(String username);
 
     List<User> findAllByRole(String role);

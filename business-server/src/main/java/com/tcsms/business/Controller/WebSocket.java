@@ -22,8 +22,7 @@ import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -184,14 +183,15 @@ public class WebSocket {
     public void openOperationLogDateSendThread(String name, String deviceId, String time) throws ParseException {
         Date datetime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(time);
         String date = new SimpleDateFormat("yyyy_MM_dd").format(datetime);
-        ConcurrentLinkedQueue<OperationLog> queue = new ConcurrentLinkedQueue<>();
+        Deque<OperationLog> deque=new ArrayDeque<>();
         Thread thread = new Thread(() -> {
             try {
+                operationLogDateServiceImp.queryOperationLogDateByDeviceIdAndTime(deque, deviceId, time, date);
                 while (!Thread.interrupted()) {
-                    log.info("消息队列的长度为："+queue.size());
-                    if (queue.size() < 90)
-                        operationLogDateServiceImp.queryOperationLogDateByDeviceIdAndTime(queue, deviceId, time, date);
-                    Optional.ofNullable(queue.poll()).ifPresent(operationLog -> {
+                    log.info("消息队列的长度为："+deque.size());
+                    if (deque.size() < 50)
+                        operationLogDateServiceImp.refreshOperationLogDateQueue(deque, deviceId, date);
+                    Optional.ofNullable(deque.pollFirst()).ifPresent(operationLog -> {
                         SendJSON sendJSON = new SendJSON(200, "operationLogDate", operationLog.toString());
                         AppointSending(name, sendJSON.toString());
                     });
@@ -200,7 +200,7 @@ public class WebSocket {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
-                queue.clear();
+                deque.clear();
             }
         });
         Optional.ofNullable(operationLogSendManager.getOrDefault(name, null))

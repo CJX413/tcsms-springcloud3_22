@@ -29,6 +29,7 @@
               :disabled="applyDisabled"
               placeholder="请输入真实姓名！"
               v-model="applyForm.name"
+              oninput="value=value.replace( /[^A-Za-z0-9\u4e00-\u9fa5\/?\\?\*?\s]/g, '')"
               clearable>
             </el-input>
           </el-row>
@@ -70,6 +71,7 @@
             <el-input
               placeholder="请输入真实姓名！"
               v-model="applyForm.name"
+              oninput="value=value.replace( /[^A-Za-z0-9\u4e00-\u9fa5\/?\\?\*?\s]/g, '')"
               clearable>
             </el-input>
           </el-row>
@@ -92,6 +94,7 @@
 </template>
 
 <script>
+
   export default {
     name: "OperatorPage",
     data() {
@@ -114,7 +117,6 @@
     methods: {
       initPage() {
         this.isOperator().then(result => {
-          console.log(result)
           if (result) {
             this.applyTableCardHidden = true;
             this.applyDisabled = true;
@@ -168,14 +170,14 @@
             'name': this.applyForm.name,
             'workerId': this.applyForm.workerId,
           }).then((response) => {
-            if (response.data.code === 200) {
+            if (response.data.success === true) {
               this.$message({
                 message: response.data.message,
                 type: 'success'
               });
               setTimeout(this.initPage(), 1000);
             } else {
-              this.$message.error(response.data.message);
+              this.$message.error('修改申请失败！' + '报错信息:' + response.data.message);
             }
           });
         } else {
@@ -183,6 +185,7 @@
         }
       },
       applyOperator() {
+        console.log(this.applyForm);
         if (this.applyForm.specialOperationCertificateNumber !== ''
           && this.applyForm.name !== '' && this.applyForm.workerId !== '') {
           this.axios.post('/applyOperator', {
@@ -190,14 +193,14 @@
             'name': this.applyForm.name,
             'workerId': this.applyForm.workerId,
           }).then((response) => {
-            if (response.data.code === 200) {
+            if (response.data.success === true) {
               this.$message({
                 message: response.data.message,
                 type: 'success'
               });
               setTimeout(this.initPage(), 1000);
             } else {
-              this.$message.error(response.data.message);
+              this.$message.error('申请驾驶员失败！' + '报错信息:' + response.data.message);
             }
           });
         } else {

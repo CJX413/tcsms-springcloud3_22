@@ -23,13 +23,16 @@ Vue.use(BaiduMap, {
   ak: 'rOsG2lx0to18nZrBCaxAjWdzBYASHGaL'
 });
 
+
 axios.defaults.baseURL = 'http://localhost:8080';
 // http request 请求拦截器
 axios.interceptors.request.use(request => {
   // 在发送请求之前做些什么
-  let token = localStorage.getItem('token');
-  if (token != null) {
-    request.headers.authorization = 'Bearer ' + localStorage.getItem('token');
+  if (!request.url.match(/^\/auth*/)) {
+    let token = localStorage.getItem('token');
+    if (token != null || token !== '') {
+      request.headers.authorization = 'Bearer ' + token;
+    }
   }
   return request;
 }, error => {
@@ -65,7 +68,8 @@ axios.interceptors.response.use(response => {
 //路由判断是否登录
 router.beforeEach((to, from, next) => {
   if (to.matched.some(record => record.meta.requireAuth)) {  // 判断该路由是否需要登录权限
-    if (localStorage.getItem('token') === null || localStorage.getItem('token') === '') {  // 判断当前的token是否存在 ； 登录存入的token
+    let token = localStorage.getItem('token');
+    if (token === null || token === '') {  // 判断当前的token是否存在 ； 登录存入的token
       next('/auth/login');
     } else {
       console.log('发送登录验证请求');
@@ -89,21 +93,45 @@ router.beforeEach((to, from, next) => {
 /**
  * 角色验证指令
  */
-Vue.directive("role", async function (el, binding, vnode) {
-  let result = await new Promise((resolve, reject) => {
-    axios.post('/' + binding.value, {}).then(response => {
-      resolve(true);
-    }).catch(error => {
-      resolve(false);
-    })
-  });
-  if (result === false) {
-    el.parentNode && el.parentNode.removeChild(el);
-    ElementUI.MessageBox.alert('对不起，您没有权限进行此操作！', '消息', {
-      confirmButtonText: '确定',
+Vue.directive("admin", function (el, binding, vnode) {
+  el.onclick = async function () {
+    let result = await new Promise((resolve, reject) => {
+      axios.post('/isAdmin', {}).then(response => {
+        resolve(true);
+      }).catch(error => {
+        resolve(false);
+      })
     });
+    console.log(result);
+    if (result === false) {
+      ElementUI.MessageBox.alert('对不起，您没有权限进行此操作！', '消息', {
+        confirmButtonText: '确定',
+      });
+    } else {
+      binding.value();
+    }
   }
 });
+Vue.directive("monitor", function (el, binding, vnode) {
+  el.onclick = async function () {
+    let result = await new Promise((resolve, reject) => {
+      axios.post('/isMonitor', {}).then(response => {
+        resolve(true);
+      }).catch(error => {
+        resolve(false);
+      })
+    });
+    console.log(result);
+    if (result === false) {
+      ElementUI.MessageBox.alert('对不起，您没有权限进行此操作！', '消息', {
+        confirmButtonText: '确定',
+      });
+    } else {
+      binding.value();
+    }
+  }
+});
+
 
 /* eslint-disable no-new */
 new Vue({
@@ -113,3 +141,5 @@ new Vue({
   components: {App},
   template: '<App/>'
 });
+
+

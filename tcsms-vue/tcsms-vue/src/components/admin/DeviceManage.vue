@@ -93,7 +93,7 @@
         <el-button
           size="mini"
           type="danger"
-          @click="handleDelete(props.row)">删除
+          @click="handleDelete(props.$index,props.row)">删除
         </el-button>
       </template>
     </el-table-column>
@@ -137,7 +137,7 @@
                     message: '修改成功!'
                   });
                 } else {
-                  this.$message.error('修改失败!');
+                  this.$message.error('修改失败!' + '报错信息：' + response.data.message);
                 }
               });
           }).catch(() => {
@@ -150,7 +150,7 @@
           this.$message.error('输入不能为空');
         }
       },
-      handleDelete(row) {
+      handleDelete(index, row) {
         if (this.rowIsNotNull(row)) {
           this.$confirm('此操作将永久删除该设备, 是否继续?', '提示', {
             confirmButtonText: '确定',
@@ -161,12 +161,13 @@
             this.axios.post('/deleteDevice', row)
               .then((response) => {
                 if (response.data.success === true) {
+                  this.tableData.splice(index, 1);
                   this.$message({
                     type: 'success',
                     message: '删除成功!'
                   });
                 } else {
-                  this.$message.error('删除失败!');
+                  this.$message.error('删除失败!' + '报错信息：' + response.data.message);
                 }
               });
           }).catch(() => {

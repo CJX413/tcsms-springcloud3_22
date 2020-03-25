@@ -11,21 +11,15 @@ import java.util.Objects;
 
 @Entity
 @Data
-@Table(name = "operator_apply")
+@Table(name = "role_apply")
 @EntityListeners(AuditingEntityListener.class)//自动更新时间戳
-public class OperatorApply {
+public class RoleApply {
     @Id
     @Column(name = "username")
     private String username;
     @Basic
-    @Column(name = "specialOperationCertificateNumber")
-    private String specialOperationCertificateNumber;
-    @Basic
-    @Column(name = "name")
-    private String name;
-    @Basic
-    @Column(name = "workerId")
-    private String workerId;
+    @Column(name = "role")
+    private String role;
     @Basic
     @Column(name = "createTime")
     @CreatedDate
@@ -36,24 +30,22 @@ public class OperatorApply {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        OperatorApply that = (OperatorApply) o;
-        return Objects.equals(username, that.username) &&
-                Objects.equals(specialOperationCertificateNumber, that.specialOperationCertificateNumber) &&
-                Objects.equals(name, that.name) &&
-                Objects.equals(workerId, that.workerId) &&
-                Objects.equals(createTime, that.createTime);
+        RoleApply roleApply = (RoleApply) o;
+        return Objects.equals(username, roleApply.username) &&
+                Objects.equals(role, roleApply.role) &&
+                Objects.equals(createTime, roleApply.createTime);
     }
+
     @Override
     public int hashCode() {
-        return Objects.hash(username, specialOperationCertificateNumber, name, workerId, createTime);
+        return Objects.hash(username, role, createTime);
     }
+
     @Override
     public String toString() {
         return "{" +
                 "\"username\":" + "\"" + username + "\"" + "," +
-                "\"specialOperationCertificateNumber\":" + "\"" + specialOperationCertificateNumber + "\"" + "," +
-                "\"name\":" + "\"" + name + "\"" + "," +
-                "\"workerId\":" + "\"" + workerId + "\"" + "," +
+                "\"role\":" + "\"" + role + "\"" + "," +
                 "\"createTime\":" + "\"" + createTime + "\"" +
                 "}";
     }

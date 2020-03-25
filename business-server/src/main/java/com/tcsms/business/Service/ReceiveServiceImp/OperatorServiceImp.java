@@ -5,8 +5,6 @@ import com.tcsms.business.Entity.Operator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
 public class OperatorServiceImp {
     @Autowired
@@ -17,7 +15,14 @@ public class OperatorServiceImp {
     }
 
     public Operator isOperator(String username) {
-        Optional<Operator> operator = operatorDao.findById(username);
-        return operator.orElse(null);
+        return operatorDao.findById(username).orElse(null);
+    }
+
+    public void deleteOperator(Operator operator) throws RuntimeException{
+        operatorDao.deleteById(operator.getUsername());
+    }
+
+    public void addOperator(Operator operator) throws RuntimeException {
+        operatorDao.save(operator);
     }
 }

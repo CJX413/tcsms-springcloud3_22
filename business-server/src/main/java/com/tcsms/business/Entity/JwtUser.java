@@ -12,7 +12,6 @@ import java.util.Collections;
  */
 public class JwtUser implements UserDetails {
 
-    private Integer id;
     private String username;
     private String password;
     private Collection<? extends GrantedAuthority> authorities;
@@ -22,7 +21,6 @@ public class JwtUser implements UserDetails {
 
     // 写一个能直接使用user创建jwtUser的构造器
     public JwtUser(User user) {
-        id = user.getId();
         username = user.getUsername();
         password = user.getPassword();
         authorities = Collections.singleton(new SimpleGrantedAuthority(user.getRole()));
@@ -66,8 +64,7 @@ public class JwtUser implements UserDetails {
     @Override
     public String toString() {
         return "{" +
-                "'id':" + id +
-                ", 'username':" + "\'" + username + "\'" +
+                "'username':" + "\'" + username + "\'" +
                 ", 'password':" + "\'" + password + "\'" +
                 ", 'authorities':" + authorities +
                 "}";

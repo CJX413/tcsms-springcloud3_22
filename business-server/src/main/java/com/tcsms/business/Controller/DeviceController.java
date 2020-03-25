@@ -31,18 +31,26 @@ public class DeviceController {
     @PreAuthorize(value = "hasAnyAuthority('ADMIN')")
     @RequestMapping(value = "/deleteDevice", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     public String deleteDevice(@RequestBody String json) {
-        DeviceRegistry deviceRegistry = new Gson().fromJson(json, DeviceRegistry.class);
-        log.info(deviceRegistry.toString());
-        deviceRegistryServiceImp.getDao().deleteById(deviceRegistry.getDeviceId());
+        try {
+            DeviceRegistry deviceRegistry = new Gson().fromJson(json, DeviceRegistry.class);
+            log.info(deviceRegistry.toString());
+            deviceRegistryServiceImp.getDao().deleteById(deviceRegistry.getDeviceId());
+        }catch (RuntimeException e){
+            return new ResultJSON(200,false,e.getMessage(),null).toString();
+        }
         return new ResultJSON(200,true,"删除设备成功！",null).toString();
     }
 
     @PreAuthorize(value = "hasAnyAuthority('ADMIN')")
     @RequestMapping(value = "/updateDevice", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     public String updateDevice(@RequestBody String json) {
-        DeviceRegistry deviceRegistry = new Gson().fromJson(json, DeviceRegistry.class);
-        log.info(deviceRegistry.toString());
-        deviceRegistryServiceImp.updateDeviceRegistry(deviceRegistry);
+        try {
+            DeviceRegistry deviceRegistry = new Gson().fromJson(json, DeviceRegistry.class);
+            log.info(deviceRegistry.toString());
+            deviceRegistryServiceImp.updateDeviceRegistry(deviceRegistry);
+        }catch (RuntimeException e){
+            return new ResultJSON(200,true,e.getMessage(),null).toString();
+        }
         return new ResultJSON(200,true,"修改设备信息成功！",null).toString();
     }
 

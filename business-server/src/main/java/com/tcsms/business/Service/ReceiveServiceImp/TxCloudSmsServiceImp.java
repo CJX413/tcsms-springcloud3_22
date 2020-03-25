@@ -19,7 +19,6 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.Random;
 
 
@@ -57,7 +56,7 @@ public class TxCloudSmsServiceImp {
      * @param phone
      */
     public void sendSmsVerifyCode(String phone) {
-        boolean success = false;
+        boolean success;
         try {
             Random random = new Random(4);
             Integer verifyCode = random.nextInt(1000000);

@@ -3,8 +3,10 @@ package com.tcsms.business;
 import com.tcsms.business.Dao.OperationLogDao;
 import com.tcsms.business.Dao.SqlMapper;
 import com.tcsms.business.Dao.UserDao;
+import com.tcsms.business.Dao.UserInfoDao;
 import com.tcsms.business.Entity.OperationLog;
 import com.tcsms.business.Entity.User;
+import com.tcsms.business.Entity.UserInfo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,13 +14,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 
 @SpringBootTest
 class BusinessServerApplicationTests {
 
     @Autowired
-    UserDao dao;
+    UserDao userDao;
+    @Autowired
+    UserInfoDao userInfoDao;
     @Autowired
     OperationLogDao operationLogDao;
 
@@ -30,10 +33,14 @@ class BusinessServerApplicationTests {
     @Test
     void contextLoads() {
         User user = new User();
-        user.setUsername("user");
-        user.setPassword(bCryptPasswordEncoder.encode("user"));
-        user.setRole("USER");
-       dao.save(user);
+        UserInfo userInfo = new UserInfo();
+        user.setUsername("monitor");
+        user.setPassword(bCryptPasswordEncoder.encode("monitor"));
+        user.setRole("MONITOR");
+        userInfo.setPhoneNumber(user.getUsername());
+        userInfo.setUsername(user.getUsername());
+        userInfoDao.save(userInfo);
+        userDao.save(user);
     }
 
     //@Test

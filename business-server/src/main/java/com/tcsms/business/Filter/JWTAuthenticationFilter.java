@@ -76,7 +76,7 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         // 返回创建成功的token
         // 但是这里创建的token只是单纯的token
         // 按照jwt的规定，最后请求的时候应该是 `Bearer token`
-        LoginJSON json = new LoginJSON(200, token, true, "Login success");
+        LoginJSON json = new LoginJSON(200, token, true, jwtUser.getUsername());
         response.getWriter().write(json.toString());
     }
 

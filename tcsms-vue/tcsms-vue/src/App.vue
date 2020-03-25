@@ -13,7 +13,7 @@
         this.axios.post('/isLogin', {})
           .then((response) => {
             this.$store.commit('CONNET_WEBSOCKET')
-          }).catch((error)=>{
+          }).catch((error) => {
           this.$router.push({path: '/auth/login'});
         });
       }

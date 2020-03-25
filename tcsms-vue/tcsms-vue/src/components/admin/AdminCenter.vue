@@ -4,7 +4,7 @@
 
 <script>
     export default {
-        name: "MonitorPage"
+        name: "AdminCenter"
     }
 </script>
 

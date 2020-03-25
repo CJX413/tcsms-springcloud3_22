@@ -25,7 +25,7 @@ public class DeviceRegistryServiceImp implements DeviceRegistryService {
     }
 
 
-    public int updateDeviceRegistry(DeviceRegistry deviceRegistry) {
+    public int updateDeviceRegistry(DeviceRegistry deviceRegistry) throws RuntimeException{
         return deviceRegistryDao.update(deviceRegistry);
     }
 

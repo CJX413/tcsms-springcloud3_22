@@ -133,6 +133,7 @@ function onopen() {
 function onmessage(e) {
   console.log('收到信息--------------');
   let data = JSON.parse(e.data);
+  console.log(data)
   console.log(data);
   if (data.message === 'warning') {
     console.log(data);
