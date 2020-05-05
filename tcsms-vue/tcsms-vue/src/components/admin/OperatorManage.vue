@@ -245,7 +245,6 @@
           });
       },
       handleDelete(index, row) {
-        console.log(index)
         this.axios.post('/deleteOperator', row)
           .then((response) => {
             if (response.data.success === true) {
@@ -254,13 +253,13 @@
                 message: '删除成功！',
                 type: 'success'
               });
+              this.restartMonitorSystem();
             } else {
-              this.$message.error('删除失败！' + '报错信息：' + response.data.message);
+              this.utils.alertErrorMessage('删除失败！', response.data.message);
             }
           });
       },
       handleAgree(index, row) {
-        console.log(index)
         this.axios.post('/agreeApplyOperator', row)
           .then((response) => {
             if (response.data.success === true) {
@@ -277,14 +276,13 @@
                 message: '已同意！',
                 type: 'success'
               });
+              this.restartMonitorSystem();
             } else {
-              this.$message.error('操作失败！' + '报错信息：' + response.data.message);
+              this.utils.alertErrorMessage('操作失败！', response.data.message);
             }
           });
       },
       handleRegister(index, row) {
-        console.log(index)
-        console.log(row)
         if (row.name !== '' && row.specialOperationCertificateNumber !== '' &&
           row.workerId !== '') {
           this.axios.post('/addOperator', row)
@@ -303,8 +301,9 @@
                   message: '注册成功！',
                   type: 'success'
                 });
+                this.restartMonitorSystem();
               } else {
-                this.$message.error('注册失败！' + '报错信息：' + response.data.message);
+                this.utils.alertErrorMessage('注册失败！', response.data.message);
               }
             });
         } else {
@@ -312,7 +311,6 @@
         }
       },
       handleRefuse(index, row) {
-        console.log(index)
         this.axios.post('/refuseApplyOperator', row)
           .then((response) => {
             if (response.data.success === true) {
@@ -322,9 +320,31 @@
                 type: 'success'
               });
             } else {
-              this.$message.error('操作失败！' + '报错信息：' + response.data.message);
+              this.utils.alertErrorMessage('操作失败！', response.data.message);
             }
           });
+      },
+      restartMonitorSystem() {
+        if (this.$store.state.monitorStatus.switch === true) {
+          this.$confirm('进行此操作需要重启监控系统, 是否继续?', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '稍后',
+            type: 'warning'
+          }).then(() => {
+            this.axios.post('/restartSecuritySystem', {})
+              .then((response) => {
+                if (response.data.success === true) {
+                  this.$message({
+                    message: '重启系统成功！',
+                    type: 'success'
+                  });
+                } else {
+                  this.utils.alertErrorMessage('重启失败！', response.data.message)
+                }
+              });
+          }).catch(() => {
+          });
+        }
       },
     },
   }

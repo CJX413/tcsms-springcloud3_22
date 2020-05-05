@@ -5,6 +5,7 @@ import Welcome from '../views/Welcome'
 import Index from '../views/Index'
 import Page404 from '../views/Page404'
 import Register from '../views/Register'
+import ForgetPassword from '../views/ForgetPassword'
 import Admin from '../views/Admin'
 
 Vue.use(VueRouter);
@@ -40,6 +41,15 @@ export default new VueRouter({
       }
     },
     {
+      path: '/auth/forgetPassword',
+      name: 'ForgetPassword',
+      component: ForgetPassword,
+      meta: {
+        title: '忘记密码',
+        requireAuth: false
+      }
+    },
+    {
       path: '/index',
       name: 'Index',
       component: Index,
@@ -54,7 +64,7 @@ export default new VueRouter({
       component: Admin,
       meta: {
         title: '管理系统',
-        requireAuth: true
+        requireAdmin: true,
       }
     },
     {

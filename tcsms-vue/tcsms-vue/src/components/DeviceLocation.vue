@@ -35,6 +35,30 @@
                      stroke-color="blue" :stroke-opacity="0.5" :stroke-weight="2"
                      :editing="false"></bm-circle>
         </bm-marker>
+
+        <div v-for="building of buildingList">
+          <bm-marker :position="building.pointOne">
+            <bm-label :content="building.buildingId" :labelStyle="{color: 'red', fontSize : '15px'}"
+                      :offset="{width: -20, height: 20}"/>
+          </bm-marker>
+          <bm-marker :position="building.pointTwo">
+            <bm-label :content="building.buildingId" :labelStyle="{color: 'red', fontSize : '15px'}"
+                      :offset="{width: -20, height: 20}"/>
+          </bm-marker>
+          <bm-marker :position="building.pointThree">
+            <bm-label :content="building.buildingId" :labelStyle="{color: 'red', fontSize : '15px'}"
+                      :offset="{width: -20, height: 20}"/>
+          </bm-marker>
+          <bm-marker :position="building.pointFour">
+            <bm-label :content="building.buildingId" :labelStyle="{color: 'red', fontSize : '15px'}"
+                      :offset="{width: -20, height: 20}"/>
+          </bm-marker>
+          <bm-polyline
+            :path="[building.pointOne,building.pointTwo,building.pointThree,building.pointFour,building.pointOne]"
+            stroke-color="blue"
+            :stroke-opacity="0.5" :stroke-weight="2">
+          </bm-polyline>
+        </div>
       </bml-marker-clusterer>
     </baidu-map>
   </div>
@@ -52,6 +76,7 @@
     },
     data() {
       return {
+        buildingList: [],
         deviceList: [
           {
             deviceId: null,
@@ -79,9 +104,19 @@
         })
       },
       initPage() {
-        this.axios.post('/deviceInfo', {})
+        this.axios.post('/registeredDeviceInfo', {})
           .then((response) => {
-            this.deviceList = response.data;
+            if (response.data.success === true) {
+              this.deviceList = response.data.result;
+            }
+          });
+        this.axios.post('/allBuilding', {})
+          .then((response) => {
+            console.log(response.data);
+            if (response.data.success === true) {
+              this.buildingList = response.data.result;
+              console.log(this.buildingList)
+            }
           });
       },
     },

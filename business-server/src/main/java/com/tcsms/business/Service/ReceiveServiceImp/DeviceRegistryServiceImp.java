@@ -25,13 +25,21 @@ public class DeviceRegistryServiceImp implements DeviceRegistryService {
     }
 
 
-    public int updateDeviceRegistry(DeviceRegistry deviceRegistry) throws RuntimeException{
-        return deviceRegistryDao.update(deviceRegistry);
+    public void updateDeviceRegistry(DeviceRegistry deviceRegistry) throws RuntimeException {
+        deviceRegistryDao.update(deviceRegistry);
     }
 
     public JsonArray getAllDeviceInfo() {
         JsonArray jsonArray = new JsonArray();
         deviceRegistryDao.findAll().forEach(deviceRegistry -> {
+            jsonArray.add(new Gson().fromJson(deviceRegistry.toString(), JsonObject.class));
+        });
+        return jsonArray;
+    }
+
+    public JsonArray getAllRegisteredDeviceInfo() {
+        JsonArray jsonArray = new JsonArray();
+        deviceRegistryDao.findByIsRegistered(true).forEach(deviceRegistry -> {
             jsonArray.add(new Gson().fromJson(deviceRegistry.toString(), JsonObject.class));
         });
         return jsonArray;

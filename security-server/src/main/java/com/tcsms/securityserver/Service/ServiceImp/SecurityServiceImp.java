@@ -16,8 +16,8 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static com.tcsms.securityserver.Config.ConstantConfig.REGISTERED;
 
 @Log4j2
 @Service
@@ -30,8 +30,8 @@ public class SecurityServiceImp implements SecurityService {
     @Autowired
     RedisServiceImp redisServiceImp;
 
-    public void openDeviceCollisionMonitor() {
-        List<DeviceRegistry> deviceRegistryList = deviceRegistryDao.findByIsRegistered(REGISTERED);
+    public void openDeviceCollisionMonitor() throws RuntimeException {
+        List<DeviceRegistry> deviceRegistryList = deviceRegistryDao.findByIsRegistered(true);
         for (int i = 0; i < deviceRegistryList.size(); i++) {
             for (int j = i + 1; j < deviceRegistryList.size(); j++) {
                 DeviceCollisionMonitor monitor = new DeviceCollisionMonitor(deviceRegistryList.get(i),
@@ -44,9 +44,9 @@ public class SecurityServiceImp implements SecurityService {
         }
     }
 
-    public void openOtherMonitor() {
-        List<DeviceRegistry> deviceRegistryList = deviceRegistryDao.findByIsRegistered(REGISTERED);
-        Map<String, String> operatorMap = new HashMap<>();
+    public void openOtherMonitor() throws RuntimeException {
+        List<DeviceRegistry> deviceRegistryList = deviceRegistryDao.findByIsRegistered(true);
+        HashMap<String, String> operatorMap = new HashMap<>();
         operatorDao.findAll().forEach(operator -> {
             operatorMap.put(operator.getWorkerId(), operator.getName());
         });
@@ -57,12 +57,9 @@ public class SecurityServiceImp implements SecurityService {
         }
     }
 
-    public void openManagerMonitor() {
+    public void openManagerMonitor() throws RuntimeException {
         ManagerMonitor monitor = new ManagerMonitor();
         monitor.start();
         MonitorManager.addMonitor(monitor);
     }
-
-
-
 }

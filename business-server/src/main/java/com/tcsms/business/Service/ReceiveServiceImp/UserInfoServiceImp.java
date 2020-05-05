@@ -21,4 +21,17 @@ public class UserInfoServiceImp implements UserInfoService {
         Optional<UserInfo> optional = userInfoDao.findById(username);
         return optional.orElse(null);
     }
+
+    public void updateAdminInfo(UserInfo userInfo) throws RuntimeException {
+        userInfoDao.save(userInfo);
+    }
+
+    public void updateUserInfo(UserInfo userInfo) throws RuntimeException {
+        userInfoDao.findById(userInfo.getUsername()).ifPresent(info -> {
+            info.setName(userInfo.getName());
+            info.setWorkerId(userInfo.getWorkerId());
+            info.setSex(userInfo.getSex());
+            userInfoDao.save(info);
+        });
+    }
 }

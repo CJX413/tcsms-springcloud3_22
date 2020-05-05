@@ -22,6 +22,7 @@ import java.util.Random;
 public class ReceiveController {
     @Autowired
     OperationLogServiceImp operationLogServiceImp;
+    private static final double G = 10;
 
     /**
      * 接收设备运行信息的接口
@@ -32,7 +33,7 @@ public class ReceiveController {
         OperationLog operationLog = new Gson().fromJson(json, OperationLog.class);
         BigDecimal radius = new BigDecimal(operationLog.getRadius());
         BigDecimal weight = new BigDecimal(operationLog.getWeight());
-        BigDecimal torque = radius.multiply(weight).multiply(new BigDecimal(ConstantConfig.G));
+        BigDecimal torque = radius.multiply(weight).multiply(new BigDecimal(G));
         double Torque = torque.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
         operationLog.setTorque(Torque);
         operationLogServiceImp.receiveOperationLog(operationLog);

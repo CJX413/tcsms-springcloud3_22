@@ -12,10 +12,22 @@ import java.util.List;
 @Repository
 public interface SqlMapper {
 
-    @Select("SELECT * FROM operation_log_${date} WHERE deviceId=#{deviceId} AND time>=#{time} ORDER BY time LIMIT 100")
-    List<OperationLog> queryOperationLogDateByDeviceIdAndTime(@Param("deviceId") String deviceId,
+    @Select("SELECT * FROM operation_log_${date} WHERE deviceId=#{deviceId} AND time>=#{time} ORDER BY time LIMIT 600")
+    List<OperationLog> queryOperationLogDateByDeviceIdAndTimeL600(@Param("deviceId") String deviceId,
                                                               @Param("time") String time,
                                                               @Param("date") String date);
 
+
+    @Select("SELECT * FROM operation_log_${date} WHERE deviceId=#{deviceId} AND time>#{time} ORDER BY time LIMIT 3600")
+    List<OperationLog> queryOperationLogDateByDeviceIdAndTimeL3600(@Param("deviceId") String deviceId,
+                                                                     @Param("date") String date,
+                                                                     @Param("time") String time);
+
+    @Select("SELECT * FROM operation_log_${date} WHERE deviceId=#{deviceId} ORDER BY time LIMIT 3600")
+    List<OperationLog> queryOperationLogDateByDeviceIdAndDateL3600(@Param("deviceId") String deviceId,
+                                                              @Param("date") String date);
+    @Select("SELECT COUNT(id) FROM operation_log_${date} WHERE deviceId=#{deviceId}")
+    int countByDeviceIdOfOperationLogDate(@Param("deviceId") String deviceId,
+                                          @Param("date") String date);
 
 }

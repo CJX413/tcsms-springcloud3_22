@@ -17,22 +17,29 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.tcsms.securityserver.Config.ConstantConfig.REGISTERED;
-import static com.tcsms.securityserver.Config.ConstantConfig.UN_REGISTERED;
-
 
 @Log4j2
 @WebFilter(filterName = "ReceiveFilter", urlPatterns = {"/operationLog"})
 public class ReceiveFilter implements Filter {
-    private List<DeviceRegistry> list;
     @Autowired
     DeviceRegistryServiceImp deviceRegistryServiceImp;
-    private static ConcurrentHashMap<String, String> deviceRegistryHashMap = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, Boolean> deviceRegistryHashMap = new ConcurrentHashMap<>();
+
+    public static void updateDeviceRegistryHashMap(DeviceRegistry device) throws RuntimeException {
+        log.info("-------------------------------------");
+        deviceRegistryHashMap.put(device.getDeviceId(), device.getIsRegistered());
+        log.info(deviceRegistryHashMap);
+    }
+
+    public static void deleteDeviceRegistryHashMap(DeviceRegistry device) throws RuntimeException {
+        deviceRegistryHashMap.remove(device.getDeviceId());
+        log.info(deviceRegistryHashMap);
+    }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         log.info("----------------------->过滤器被创建");
-        this.list = deviceRegistryServiceImp.getDao().findAll();
+        List<DeviceRegistry> list = deviceRegistryServiceImp.getDao().findAll();
         for (DeviceRegistry deviceRegistry : list) {
             deviceRegistryHashMap.put(deviceRegistry.getDeviceId(), deviceRegistry.getIsRegistered());
         }
@@ -45,18 +52,18 @@ public class ReceiveFilter implements Filter {
         String json = getJson(requestWrapper);
         OperationLog operationLog = new Gson().fromJson(json, OperationLog.class);
 
-        String value = deviceRegistryHashMap.getOrDefault(operationLog.getDeviceId(), null);
+        Boolean value = deviceRegistryHashMap.getOrDefault(operationLog.getDeviceId(), null);
         if (value == null) {
             DeviceRegistry deviceRegistry = new DeviceRegistry();
             deviceRegistry.setDeviceModel(operationLog.getDeviceModel());
-            deviceRegistry.setIsRegistered(UN_REGISTERED);
+            deviceRegistry.setIsRegistered(false);
             deviceRegistry.setDeviceId(operationLog.getDeviceId());
             deviceRegistry.setLatitude(operationLog.getLatitude());
             deviceRegistry.setLongitude(operationLog.getLongitude());
             deviceRegistryHashMap.put(deviceRegistry.getDeviceId(), deviceRegistry.getIsRegistered());
             deviceRegistryServiceImp.getDao().save(deviceRegistry);
         } else {
-            if (value.equals(REGISTERED)) {
+            if (value.equals(true)) {
                 filterChain.doFilter(requestWrapper, servletResponse);
             }
         }

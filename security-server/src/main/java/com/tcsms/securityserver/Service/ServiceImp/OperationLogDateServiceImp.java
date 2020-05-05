@@ -1,6 +1,5 @@
 package com.tcsms.securityserver.Service.ServiceImp;
 
-import com.tcsms.securityserver.Config.ConstantConfig;
 import com.tcsms.securityserver.Dao.DeviceRegistryDao;
 import com.tcsms.securityserver.Dao.OperationLogDao;
 import com.tcsms.securityserver.Dao.SqlMapper;
@@ -61,16 +60,17 @@ public class OperationLogDateServiceImp {
             System.out.println("重命名表成功1");
             sqlMapper.renameOperationLogCloneToOperationLog();
             System.out.println("重命名表成功2");
-            sqlMapper.removePartitioningOfOperationLog();
-            System.out.println("删除分区成功");
-            List<DeviceRegistry> list = deviceRegistryDao.findByIsRegistered(ConstantConfig.REGISTERED);
-            if (list.size() == 0) {
-                sqlMapper.createPartitioningOfOperationLog(1);
-                System.out.println("重新分区成功");
-            } else {
-                sqlMapper.createPartitioningOfOperationLog(list.size());
-                System.out.println("重新分区成功");
-            }
+//            sqlMapper.removePartitioningOfOperationLog();
+//            System.out.println("删除分区成功");
+//            List<DeviceRegistry> list = deviceRegistryDao.findByIsRegistered(true);
+//            if (list == null) {
+//                sqlMapper.createPartitioningOfOperationLog(1);
+//                System.out.println("重新分区成功");
+//            } else {
+//                int count = (list.size() % 2 == 0) ? (list.size() + 1) : list.size();
+//                sqlMapper.createPartitioningOfOperationLog(count);
+//                System.out.println("重新分区成功");
+//            }
         } catch (RuntimeException e) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();//关键
             e.printStackTrace();

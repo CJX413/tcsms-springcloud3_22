@@ -1,12 +1,8 @@
 package com.tcsms.business;
 
-import com.tcsms.business.Dao.OperationLogDao;
-import com.tcsms.business.Dao.SqlMapper;
-import com.tcsms.business.Dao.UserDao;
-import com.tcsms.business.Dao.UserInfoDao;
+import com.tcsms.business.Dao.*;
 import com.tcsms.business.Entity.OperationLog;
-import com.tcsms.business.Entity.User;
-import com.tcsms.business.Entity.UserInfo;
+import com.tcsms.business.Service.ReceiveServiceImp.WarningLogServiceImp;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,6 +20,10 @@ class BusinessServerApplicationTests {
     UserInfoDao userInfoDao;
     @Autowired
     OperationLogDao operationLogDao;
+    @Autowired
+    WarningLogServiceImp warningLogServiceImp;
+    @Autowired
+    WarningLogDao warningLogDao;
 
     @Autowired
     SqlMapper sqlMapper;
@@ -32,15 +32,6 @@ class BusinessServerApplicationTests {
 
     @Test
     void contextLoads() {
-        User user = new User();
-        UserInfo userInfo = new UserInfo();
-        user.setUsername("monitor");
-        user.setPassword(bCryptPasswordEncoder.encode("monitor"));
-        user.setRole("MONITOR");
-        userInfo.setPhoneNumber(user.getUsername());
-        userInfo.setUsername(user.getUsername());
-        userInfoDao.save(userInfo);
-        userDao.save(user);
     }
 
     //@Test

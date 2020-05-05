@@ -1,14 +1,7 @@
 package com.tcsms.securityserver.Service.ServiceImp;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.tcsms.securityserver.Config.ExceptionInfo;
 import com.tcsms.securityserver.Config.TokenConfig;
-import com.tcsms.securityserver.Config.WarningInfo;
-import com.tcsms.securityserver.Exception.SendWarningFailedException;
-import com.tcsms.securityserver.JSON.ResultJSON;
-import com.tcsms.securityserver.JSON.SendJSON;
+import com.tcsms.securityserver.Entity.WarningLog;
 import com.tcsms.securityserver.Monitor.MonitorManager;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Optional;
 
 
@@ -81,31 +72,11 @@ public class RestTemplateServiceImp {
     }
 
     @Async
-    public void sendWarning(WarningInfo warningInfo, JsonArray data) throws SendWarningFailedException {
+    public void sendWarning(WarningLog warningLog) {
         log.info("发送一次警报");
-        String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("time", time);
-        jsonObject.add("data", data);
-        SendJSON json = new SendJSON(warningInfo.getCode(),
-                warningInfo.getMsg(), jsonObject);
-        ResultJSON result = new Gson().fromJson(sendJson(WARNING_RECEIVE_URL, json.toString()),
-                ResultJSON.class);
-        if (result.getCode() != 200) {
-            throw new SendWarningFailedException();
-        }
+        sendJson(WARNING_RECEIVE_URL, warningLog.toString());
     }
 
-    @Async
-    public void sendException(ExceptionInfo exceptionInfo, JsonArray data) {
-        String time = new SimpleDateFormat("").format(new Date());
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("time", time);
-        jsonObject.add("data", data);
-        SendJSON json = new SendJSON(exceptionInfo.getCode(),
-                exceptionInfo.getMsg(), jsonObject);
-        sendJson(WARNING_RECEIVE_URL, json.toString());
-    }
 
     @Async
     public void sendMonitorStatus() {

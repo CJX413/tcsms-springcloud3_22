@@ -20,11 +20,14 @@
         </el-date-picker>
       </el-col>
       <el-col :span="2">
-        <el-button type="primary" @click="openOperationLogDate">确认</el-button>
+        <el-button type="primary" @click="openOperationLogDate" :loading="loading">确认</el-button>
+      </el-col>
+      <el-col :span="2">
+        <el-button type="primary" @click="allDevice" :loading="loading">全景模式</el-button>
       </el-col>
     </el-row>
     <el-divider></el-divider>
-    <el-row style="background-color: gray;">
+    <el-row v-show="singleShow" style="background-color: gray">
       <el-col :span="10">
         <canvas id="myCanvas" :width="500" :height="500"></canvas>
       </el-col>
@@ -38,19 +41,25 @@
         </el-container>
       </el-col>
     </el-row>
+    <el-row v-show="!singleShow">
+      <panorama-monitor-date :deviceList="deviceList" :time="time"></panorama-monitor-date>
+    </el-row>
   </div>
 </template>
 
 <script>
   import MonitorCard from './MonitorCard';
+  import PanoramaMonitorDate from './PanoramaMonitorDate';
 
   export default {
     components: {
-      MonitorCard,
+      MonitorCard, PanoramaMonitorDate,
     },
     name: "VideoPlayback",
     data() {
       return {
+        loading: false,
+        singleShow: true,
         device: {
           deviceId: null,
           isRegistered: null,
@@ -134,8 +143,8 @@
     },
     destroyed() {
       console.log('销毁了---------')
-      this.$store.state.operationLogDate = null;
-      this.closeOperationLogDate();
+      this.$store.commit('CLEAR_OPERATIONDATE');
+      this.closeAllKindOfOperationLogSend();
     },
     methods: {
       initCanvas() {
@@ -147,9 +156,11 @@
         this.paint(this.operationLogDate);
       },
       initDevice() {
-        this.axios.post('/deviceInfo', {})
+        this.axios.post('/registeredDeviceInfo', {})
           .then((response) => {
-            this.deviceList = response.data;
+            if (response.data.success === true) {
+              this.deviceList = response.data.result;
+            }
           });
       },
       openOperationLogDate() {
@@ -159,49 +170,69 @@
             "time": this.time,
           })
             .then((response) => {
-              this.paint(this.operationLogDate);
+              let data = response.data;
+              if (data.success === false) {
+                this.utils.alertErrorMessage('获取该设备的历史运行日志失败！', data.message)
+              }
             });
         } else {
           this.$message.error('请选择设备和时间！');
         }
       },
-      closeOperationLogDate() {
-        this.axios.post('/closeOperationLogDate', {})
+      allDevice() {
+        if (this.time !== '') {
+          this.loading = true;
+          this.openAllOperationLogDate();
+          this.loading = false;
+          this.singleShow = false;
+        } else {
+          this.$message.error('请选择时间！');
+        }
+      },
+      async openAllOperationLogDate() {
+        await this.axios.post('/openAllOperationLogDate', {
+          "time": this.time,
+        })
+          .then(response => {
+            if (response.data.success === false) {
+              this.utils.alertErrorMessage('获取全部设备的历史运行日志失败！', data.message)
+
+            }
+          });
+      },
+      closeAllKindOfOperationLogSend() {
+        this.axios.post('/closeAllKindOfOperationLogSend', {})
           .then((response) => {
             console.log(response.data);
           });
       },
       paint(operationLog) {
+        console.log(operationLog.angle)
         console.log('画画---------------')
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         let L = this.R * (operationLog.radius / this.device.bigLength);
-        let Angle = (operationLog.angle / 180) * Math.PI;
-        let Ax = this.X + this.R * Math.cos(Angle);
-        let Ay = this.Y + this.R * Math.sin(Angle);
-        let Bx = this.X + L * Math.cos(Angle);
-        let By = this.Y + L * Math.sin(Angle);
-
+        let Angle = Math.PI / 2 - (operationLog.angle / 180) * Math.PI; //>>>>>>>>>旋转90度并以顺时针为正方向
+        let Ax = parseInt(this.X + this.R * Math.cos(Angle));
+        let Ay = parseInt(this.Y - this.R * Math.sin(Angle));
+        let Bx = parseInt(this.X + L * Math.cos(Angle));
+        let By = parseInt(this.Y - L * Math.sin(Angle));
         //画圆
         this.context.beginPath();
         this.context.arc(this.X, this.Y, this.R, 0, 2 * Math.PI);
         this.context.stroke();
-
         //画直线
         this.context.beginPath();
         this.context.moveTo(this.X, this.Y);
         this.context.lineTo(Ax, Ay);
         this.context.stroke();
-
         //画圆的O点
         this.context.beginPath();
         this.context.arc(this.X, this.Y, 6, 0, Math.PI * 2);
         this.context.fill();
-
         // 画圆周上的A点
         this.context.beginPath();
         this.context.arc(Ax, Ay, 6, 0, Math.PI * 2);
         this.context.fill();
-
         //画直线上的B点
         this.context.beginPath();
         this.context.arc(Bx, By, 6, 0, Math.PI * 2);
@@ -212,5 +243,4 @@
 </script>
 
 <style scoped>
-
 </style>

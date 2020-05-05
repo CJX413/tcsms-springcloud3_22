@@ -1,6 +1,7 @@
 package com.tcsms.business.Entity;
 
 import lombok.Data;
+import org.hibernate.annotations.ColumnDefault;
 
 import javax.persistence.*;
 import java.util.Objects;
@@ -22,8 +23,8 @@ public class UserInfo {
     @Column(name = "phoneNumber")
     private String phoneNumber;
     @Basic
-    @Column(name = "sex")
-    private String sex;
+    @Column(name = "sex",nullable = false,columnDefinition = "varchar(255) default '男'")
+    private String sex="男";
 
     @Override
     public boolean equals(Object o) {

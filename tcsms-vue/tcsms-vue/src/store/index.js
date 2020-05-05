@@ -1,40 +1,50 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
+import utils from '../utils'
 
 Vue.use(Vuex);
 
 const state = {
+  userInfo: {
+    username: '',
+    name: '',
+    workerId: '',
+    phoneNumber: '',
+    sex: '',
+  },
+    allOperationLog: [],
+    allOperationLogDate: null,
     operationLog: {
-      deviceModel: null,
-      deviceId: null,
-      operator: null,
-      workerId: null,
-      time: null,
-      longitude: null,
-      latitude: null,
-      radius: null,
-      angle: null,
-      height: null,
-      torque: null,
-      weight: null,
-      windVelocity: null,
-      magnification: null,
+      deviceModel: '',
+      deviceId: '',
+      operator: '',
+      workerId: '',
+      time: '',
+      longitude: '',
+      latitude: '',
+      radius: '',
+      angle: '',
+      height: '',
+      torque: '',
+      weight: '',
+      windVelocity: '',
+      magnification: '',
     },
     operationLogDate: {
-      deviceModel: null,
-      deviceId: null,
-      operator: null,
-      workerId: null,
-      time: null,
-      longitude: null,
-      latitude: null,
-      radius: null,
-      angle: null,
-      height: null,
-      torque: null,
-      weight: null,
-      windVelocity: null,
-      magnification: null,
+      deviceModel: '',
+      deviceId: '',
+      operator: '',
+      workerId: '',
+      time: '',
+      longitude: 0,
+      latitude: 0,
+      radius: 0,
+      angle: 0,
+      height: 0,
+      torque: 0,
+      weight: 0,
+      windVelocity: '',
+      magnification: '',
     },
     monitorStatus: {
       switch: false,
@@ -54,6 +64,43 @@ const state = {
 
 //同步方法
 const mutations = {
+  CLEAR_OPERATION() {
+    state.operationLog = {
+      deviceModel: '',
+      deviceId: '',
+      operator: '',
+      workerId: '',
+      time: '',
+      longitude: 0,
+      latitude: 0,
+      radius: 0,
+      angle: 0,
+      height: 0,
+      torque: 0,
+      weight: 0,
+      windVelocity: 0,
+      magnification: 0,
+    };
+  },
+  CLEAR_OPERATIONDATE() {
+    state.operationLogDate = {
+      deviceModel: '',
+      deviceId: '',
+      operator: '',
+      workerId: '',
+      time: 0,
+      longitude: 0,
+      latitude: 0,
+      radius: 0,
+      angle: 0,
+      height: 0,
+      torque: 0,
+      weight: 0,
+      windVelocity: 0,
+      magnification: 0,
+    };
+  }
+  ,
   CONNET_WEBSOCKET() {
     if (state.websock === null) {
       const wsuri = 'ws://localhost:8080/webSocket/' + localStorage.getItem('username');
@@ -72,7 +119,8 @@ const mutations = {
         state.websock.onclose = onclose();
       }
     }
-  },
+  }
+  ,
   ADD_WARNING(items) {
     let username = localStorage.getItem('username');
     let value = localStorage.getItem('warning_' + username);
@@ -87,7 +135,8 @@ const mutations = {
       state.tableData.push(formatTableData(items, state.tableData.length));
       localStorage.setItem('warning_' + username, JSON.stringify(state.tableData));
     }
-  },
+  }
+  ,
   CLEARN_WARNING() {
     let username = localStorage.getItem('username');
     localStorage.setItem('warning_' + username, '');
@@ -114,14 +163,13 @@ const getters = {
 };
 
 function formatTableData(items, order) {
-  let innerData = items.data;
   return {
     order: order,
     code: items.code,
     message: items.message,
-    time: innerData.time,
+    time: items.time,
     read: false,
-    data: innerData.data,
+    data: items.data,
   };
 }
 
@@ -134,18 +182,43 @@ function onmessage(e) {
   console.log('收到信息--------------');
   let data = JSON.parse(e.data);
   console.log(data)
-  console.log(data);
+  console.log(data.data.error)
   if (data.message === 'warning') {
     console.log(data);
     let innerData = data.data;
     state.warningMessage.push(innerData.message);
     mutations.ADD_WARNING(innerData);
-  } else if (data.message === 'operationLog') {
-    state.operationLog = data.data;
-  } else if (data.message === 'operationLogDate') {
-    state.operationLogDate = data.data;
-  } else if (data.message === 'monitorStatus') {
+  }
+  else if (data.message === 'operationLog') {
+    if (data.data.error === undefined) {
+      state.operationLog = data.data;
+    } else {
+      utils.alertErrorMessage('发送该设备当前的运行日志失败！', data.data.error);
+    }
+  }
+  else if (data.message === 'operationLogDate') {
+    if (data.data.error === undefined) {
+      state.operationLogDate = data.data;
+    } else {
+      utils.alertErrorMessage('发送该设备的历史运行日志失败！', data.data.error);
+    }
+  }
+  else if (data.message === 'monitorStatus') {
     state.monitorStatus = data.data;
+  }
+  else if (data.message === 'allOperationLog') {
+    if (data.data.error === undefined) {
+      state.allOperationLog = data.data;
+    } else {
+      utils.alertErrorMessage('发送所有设备当前的运行日志失败！', data.data.error);
+    }
+  }
+  else if (data.message === 'allOperationLogDate') {
+    if (data.data.error === undefined) {
+      state.allOperationLogDate = data.data;
+    } else {
+      utils.alertErrorMessage('发送所有设备当前的运行日志失败！', data.data.error);
+    }
   }
 }
 

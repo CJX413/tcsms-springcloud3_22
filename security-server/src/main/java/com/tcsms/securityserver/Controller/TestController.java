@@ -5,6 +5,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.tcsms.securityserver.Config.WarningInfo;
 import com.tcsms.securityserver.Entity.OperationLog;
+import com.tcsms.securityserver.Entity.WarningDetail;
+import com.tcsms.securityserver.Entity.WarningLog;
 import com.tcsms.securityserver.Exception.SendWarningFailedException;
 import com.tcsms.securityserver.Monitor.MonitorManager;
 import com.tcsms.securityserver.Service.ServiceImp.RestTemplateServiceImp;
@@ -13,8 +15,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 @Log4j2
 @RestController
@@ -32,13 +38,6 @@ public class TestController {
                 WarningInfo.DEVICE_COLLISION_YELLOW_WARNING,
                 WarningInfo.DEVICE_COLLISION_RED_WARNING,
         };
-        String[] time = {
-                "2016-05-02",
-                "2016-05-03",
-                "2016-05-04",
-                "2016-05-05",
-                "2016-05-06",
-        };
         for (int i = 0; i < 20; i++) {
             JsonArray array = new JsonArray();
             Date date = new Date();
@@ -49,10 +48,26 @@ public class TestController {
                     39.920597, 20.0, 30.0, 50.0, 200.0, 50.0, 5.0, 2);
             array.add(new Gson().fromJson(log.toString(), JsonObject.class));
             array.add(new Gson().fromJson(log2.toString(), JsonObject.class));
-            restTemplateServiceImp.sendWarning(Warning[i % Warning.length], array);
+            sendWarning(Warning[i % Warning.length], array);
             Thread.sleep(1000);
         }
         return "发送一次警报";
+    }
+
+    void sendWarning(WarningInfo warningInfo, JsonArray data) throws SendWarningFailedException {
+        WarningLog warningLog = new WarningLog();
+        warningLog.setCode(warningInfo.getCode());
+        warningLog.setMessage(warningInfo.getMsg());
+        warningLog.setTime(new Timestamp(System.currentTimeMillis()));
+        List<WarningDetail> list = new ArrayList<>();
+        Gson gson = new Gson();
+        Optional.ofNullable(data).ifPresent(jsonArray -> {
+            jsonArray.forEach(jsonElement -> {
+                list.add(gson.fromJson(jsonElement.toString(), WarningDetail.class));
+            });
+        });
+        warningLog.setWarningDetails(list);
+        restTemplateServiceImp.sendWarning(warningLog);
     }
 
     @RequestMapping("/test/pauseMonitor")

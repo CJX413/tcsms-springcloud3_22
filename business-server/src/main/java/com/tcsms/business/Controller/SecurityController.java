@@ -15,10 +15,20 @@ public class SecurityController {
     @Autowired
     RestTemplate restTemplate;
 
-    @RequestMapping("/securitySystemSwitch")
+    @RequestMapping("/openSecuritySystem")
     @PreAuthorize(value = "hasAnyAuthority('ADMIN')")
-    public String securitySystemSwitch() {
-        return restTemplate.getForObject("http://security-server/securitySystemSwitch", String.class);
+    public String openSecuritySystem() {
+        return restTemplate.getForObject("http://security-server/openSecuritySystem", String.class);
+    }
+    @RequestMapping("/closeSecuritySystem")
+    @PreAuthorize(value = "hasAnyAuthority('ADMIN')")
+    public String closeSecuritySystem() {
+        return restTemplate.getForObject("http://security-server/closeSecuritySystem", String.class);
+    }
+    @RequestMapping("/restartSecuritySystem")
+    @PreAuthorize(value = "hasAnyAuthority('ADMIN')")
+    public String restartSecuritySystemSwitch() {
+        return restTemplate.getForObject("http://security-server/restartSecuritySystem", String.class);
     }
 
     @RequestMapping("/monitorStatus")

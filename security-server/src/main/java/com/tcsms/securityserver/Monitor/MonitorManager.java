@@ -57,10 +57,10 @@ public class MonitorManager {
         map.put(monitor.getName(), monitor);
     }
 
-    public static void shutDownAllMonitor() {
-        for (Map.Entry<String, TcsmsMonitor> entry : map.entrySet()) {
-            entry.getValue().interrupt();
-        }
+    public static void shutDownAllMonitor() throws RuntimeException {
+        map.forEach((key, monitor) -> {
+            monitor.interrupt();
+        });
         map.clear();
     }
 

@@ -38,7 +38,7 @@
                   <el-col :span="12"><span>幅度：{{items.radius}}m</span></el-col>
                 </el-row>
                 <el-row>
-                  <el-col :span="12"><span>力矩：{{items.weight*10*items.radius}}N/m</span>
+                  <el-col :span="12"><span>力矩：{{(items.weight*10*items.radius).toFixed(1)}}N/m</span>
                   </el-col>
                   <el-col :span="12"><span>风速：{{items.windVelocity}}m/s</span></el-col>
                 </el-row>

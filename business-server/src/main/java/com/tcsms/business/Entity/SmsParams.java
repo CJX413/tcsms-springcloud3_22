@@ -10,15 +10,15 @@ public class SmsParams {
     /**
      * 信息
      */
-    private  String message;
+    private  String[] params;
 
     /**
      * 手机号码
      */
     private String[] phone;
 
-    public SmsParams(String[] phone, String message) {
+    public SmsParams(String[] phone, String[] params) {
         this.phone = phone;
-        this.message = message;
+        this.params = params;
     }
 }

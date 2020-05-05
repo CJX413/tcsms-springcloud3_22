@@ -21,7 +21,7 @@
             <el-submenu index="2">
               <template slot="title">
                 <el-avatar src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"></el-avatar>
-                <span>{{this.name}}</span>
+                <span>{{this.$store.state.userInfo.name}}</span>
               </template>
               <el-menu-item index="2-1">
                 <i class="el-icon-user-solid"></i>
@@ -52,7 +52,7 @@
             <i class="el-icon-location"></i>
             <span>设备位置</span>
           </el-menu-item>
-          <el-menu-item index="2" v-monitor="()=>{this.componentType=video-monitor}">
+          <el-menu-item index="2" v-monitor="()=>{this.componentType='video-monitor'}">
             <i class="el-icon-view"></i>
             <span>视频监控</span>
           </el-menu-item>
@@ -63,7 +63,10 @@
           <el-menu-item index="4" v-monitor="()=>{this.componentType='video-playback'}">
             <i class="el-icon-video-camera-solid"></i>
             <span>监控回放</span>
-          </el-menu-item>
+          </el-menu-item> <el-menu-item index="5" v-monitor="()=>{this.componentType='data-analysis'}">
+          <i class="el-icon-s-data"></i>
+          <span>数据分析</span>
+        </el-menu-item>
         </el-menu>
       </el-aside>
       <el-main style="padding-top: 0px">
@@ -83,10 +86,10 @@
       WarningMessage: () => import("../components/WarningMessage.vue"),
       OperatorPage: () => import("../components/OperatorPage.vue"),
       VideoPlayback: () => import("../components/VideoPlayback.vue"),
+      DataAnalysis: () => import("../components/DataAnalysis.vue"),
     },
     data() {
       return {
-        name: '',
         componentType: 'device-location',
         activeHeader: null,
         activeAside: '1',
@@ -116,8 +119,11 @@
       initPage() {
         this.axios.post('/userInfo', {})
           .then((response) => {
-            this.name = response.data.name;
-            this.$store.commit('CONNET_WEBSOCKET');
+            console.log(response.data);
+            if (response.data.success === true) {
+              this.$store.state.userInfo = response.data.result;
+              this.$store.commit('CONNET_WEBSOCKET');
+            }
           });
       },
       logout() {

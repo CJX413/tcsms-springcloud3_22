@@ -11,7 +11,9 @@ import VueWechatTitle from 'vue-wechat-title'
 import BaiduMap from 'vue-baidu-map'
 import store from './store' //引入store
 import moment from 'moment'
+import utils from './utils'
 
+Vue.prototype.utils = utils;
 Vue.use(VueWechatTitle);
 Vue.use(VueResource);
 Vue.prototype.axios = axios;    //全局注册，使用方法为:this.$axios
@@ -82,7 +84,24 @@ router.beforeEach((to, from, next) => {
         next('/auth/login');
       });
     }
-  } else {
+  } else if (to.matched.some(record => record.meta.requireAdmin)) {
+    console.log('admin验证++++++++++')
+    let token = localStorage.getItem('token');
+    if (token === null || token === '') {  // 判断当前的token是否存在 ； 登录存入的token
+      next('/auth/login');
+    } else {
+      axios.post('/isAdmin', {})
+        .then((response) => {
+          console.log(response);
+          next();
+        }).catch((error) => {
+        ElementUI.MessageBox.alert('对不起，您没有权限进行此操作！', '消息', {
+          confirmButtonText: '确定',
+        });
+      });
+    }
+  }
+  else {
     next();
   }
 });

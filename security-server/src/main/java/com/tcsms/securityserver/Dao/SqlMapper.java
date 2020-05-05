@@ -1,10 +1,10 @@
 package com.tcsms.securityserver.Dao;
 
-import com.tcsms.securityserver.Entity.OperationLog;
 import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 @Repository
@@ -24,8 +24,8 @@ public interface SqlMapper {
     @Update("ALTER TABLE operation_log REMOVE PARTITIONING;")
     void removePartitioningOfOperationLog();
 
-    @Update("ALTER TABLE operation_log PARTITION BY KEY(deviceId) PARTITIONS ${count};")
-    void createPartitioningOfOperationLog(@Param("count") int count);
+    @Update("ALTER TABLE operation_log PARTITION BY KEY(deviceId) PARTITIONS 127;")
+    void createPartitioningOfOperationLog();
 
     /**
      * 这些事用来在刷新operation_log表出错时的操作
@@ -50,4 +50,5 @@ public interface SqlMapper {
 
     @Update("CREATE TABLE operation_log SELECT * FROM operation_log_backup")
     void restoreOperationLog();
+
 }

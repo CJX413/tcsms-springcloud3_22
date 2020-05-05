@@ -1,17 +1,17 @@
 <template>
-  <el-card class="login-box">
+  <el-card class="login-box" content="">
     <!-- 通过:rules="loginFormRules"来绑定输入内容的校验规则 -->
-    <el-form :rules="loginFormRules" ref="loginForm" :model="loginForm" label-position="right" label-width="auto"
+    <el-form ref="loginForm" :model="loginForm" label-position="right" label-width="auto"
              show-message>
       <span class="login-title">欢迎登录</span>
       <div style="margin-top: 5px"></div>
-      <el-form-item label="用户名:" prop="loginName">
+      <el-form-item label="用户名:">
         <el-col :span="22">
-          <el-input placeholder="手机号" type="text" v-model="loginForm.loginName" maxlength="11"
+          <el-input placeholder="手机号" type="text" v-model="loginForm.loginName"
                     oninput="value=value.replace(/[^\a-\z\A-\Z0-9]/g, '')"></el-input>
         </el-col>
       </el-form-item>
-      <el-form-item label="密码:" prop="loginPassword">
+      <el-form-item label="密码:">
         <el-col :span="22">
           <el-input type="password" v-model="loginForm.loginPassword"
                     oninput="value=value.replace(/[^\a-\z\A-\Z0-9]/g, '')"></el-input>
@@ -26,8 +26,8 @@
         </el-col>
       </el-form-item>
       <el-row style="text-align: center; margin-top: 0px;;">
-        <el-link type="primary" @click="">忘记密码</el-link>
-        <el-link type="primary" @click="toRegister">用户注册</el-link>
+        <el-link type="primary" href="/auth/forgetPassword" @click="">忘记密码</el-link>
+        <el-link type="primary" href="/auth/register">用户注册</el-link>
       </el-row>
     </el-form>
   </el-card>
@@ -40,7 +40,7 @@
       return {
         loginForm: {
           loginName: '',
-          loginPassword: ''
+          loginPassword: '',
         },
         data: {
           code: 0,
@@ -49,15 +49,6 @@
           message: ''
         },
         rememberMe: false,
-        // 表单验证，需要在 el-form-item 元素中增加 prop 属性
-        loginFormRules: {
-          loginName: [
-            {required: true, message: '账号不可为空', trigger: 'blur'}
-          ],
-          loginPassword: [
-            {required: true, message: '密码不可为空', trigger: 'blur'}
-          ]
-        }
       }
     },
     methods: {
@@ -65,6 +56,7 @@
         this.$router.push({path: '/auth/register'});
       },
       loginSubmit() {
+        console.log(this.loginForm.loginName + this.loginForm.loginPassword);
         if (this.loginForm.loginName === '' || this.loginForm.loginPassword === '') {
           this.$alert('账号和密码不能为空！', '提示', {
             confirmButtonText: '确定',

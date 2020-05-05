@@ -8,6 +8,8 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 
 @Log4j2
 @Service
@@ -15,14 +17,20 @@ public class DeviceRegistryServiceImp implements DeviceRegistryService {
     @Autowired
     DeviceRegistryDao deviceRegistryDao;
 
-
     public DeviceRegistryDao getDao() {
         return deviceRegistryDao;
     }
 
-
-    public int updateDeviceRegistry(DeviceRegistry deviceRegistry) {
-        return deviceRegistryDao.update(deviceRegistry);
+    public boolean isRegisteredChange(DeviceRegistry device) throws RuntimeException {
+        Optional<DeviceRegistry> optional = deviceRegistryDao.findById(device.getDeviceId());
+        if (optional.isPresent()) {
+            if (optional.get().getIsRegistered() == device.getIsRegistered()) {
+                return false;
+            }
+            return true;
+        }
+        return false;
     }
+
 
 }

@@ -1,12 +1,15 @@
 package com.tcsms.securityserver.Service.ServiceImp;
 
 
-import com.tcsms.securityserver.Entity.DeviceRegistry;
+import com.google.gson.Gson;
+import com.tcsms.securityserver.Entity.OperationLog;
 import com.tcsms.securityserver.Service.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+
+import java.util.Optional;
 
 @Service
 public class RedisServiceImp implements RedisService {
@@ -36,14 +39,6 @@ public class RedisServiceImp implements RedisService {
         } finally {
             jedis.close();
         }
-    }
-
-    public void setDeviceRegistry(DeviceRegistry deviceRegistry) {
-        set(deviceRegistry.getDeviceId() + REGISTRY_SUFFIX, deviceRegistry.getIsRegistered());
-    }
-
-    public String getDeviceRegistry(String deviceId) {
-        return get(deviceId + REGISTRY_SUFFIX);
     }
 
 }

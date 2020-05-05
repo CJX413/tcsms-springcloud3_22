@@ -1,24 +1,21 @@
 package com.tcsms.securityserver;
 
+import com.tcsms.securityserver.Dao.OperationLogDao;
 import com.tcsms.securityserver.Dao.SqlMapper;
 import com.tcsms.securityserver.Dao.WarningDetailDao;
 import com.tcsms.securityserver.Dao.WarningLogDao;
-import com.tcsms.securityserver.Entity.WarningDetail;
-import com.tcsms.securityserver.Entity.WarningLog;
-import com.tcsms.securityserver.ScheduTask.Task;
+import com.tcsms.securityserver.Entity.OperationLog;
+import com.tcsms.securityserver.ScheduTask.RefreshOperationLogTab;
 import com.tcsms.securityserver.Service.ServiceImp.OperationLogDateServiceImp;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @SpringBootTest
 class SecurityServerApplicationTests {
 
     @Autowired
-    Task task;
+    RefreshOperationLogTab task;
     @Autowired
     SqlMapper sqlMapper;
     @Autowired
@@ -27,23 +24,20 @@ class SecurityServerApplicationTests {
     WarningDetailDao warningDetailDao;
     @Autowired
     WarningLogDao warningLogDao;
+    @Autowired
+    OperationLogDao operationLogDao;
 
     @Test
     void contextLoads() throws InterruptedException {
-        // sqlMapper.dropOperationLogBackup();
-        // task.refreshOperationLogTab();
-        WarningLog warningLog = new WarningLog();
-        warningLog.setCode(200);
-        warningLog.setMessage("55555555555555");
-        List<WarningDetail> warningDetails = new ArrayList<>();
-        WarningDetail warningDetail = new WarningDetail();
-        warningDetail.setDeviceModel("161651");
-        warningDetail.setDeviceId("XXXXXXXXXXXX");
-        warningDetail.setWarningLog(warningLog);
-        warningDetails.add(warningDetail);
-        warningLog.setWarningDetails(warningDetails);
-        warningLogDao.save(warningLog);
-
+        int i = 1;
+        while (true) {
+            OperationLog operationLog = new OperationLog(i, "1", "D1", "1", "1", "1", 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1);
+            operationLogDao.save(operationLog);
+            OperationLog operationLog1 = new OperationLog(i + 1, "1", "D3", "1", "1", "1", 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1);
+            operationLogDao.save(operationLog1);
+            i = i + 2;
+            Thread.sleep(500);
+        }
     }
 
 }

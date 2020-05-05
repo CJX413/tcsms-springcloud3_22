@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.tcsms.business.Entity.*;
 import com.tcsms.business.JSON.ResultJSON;
 import com.tcsms.business.Service.ReceiveServiceImp.*;
+import com.tcsms.business.Utils.JsonHelper;
 import com.tcsms.business.Utils.JwtTokenUtils;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,8 @@ public class UserController {
     UserServiceImp userServiceImp;
     @Autowired
     RoleApplyServiceImp roleApplyServiceImp;
+    @Autowired
+    InvitationCodeServiceImp invitationCodeServiceImp;
 
 
     @RequestMapping("/isLogin")
@@ -59,7 +62,7 @@ public class UserController {
         String token = request.getHeader("authorization");
         String username = JwtTokenUtils.getUsername(token);
         UserInfo userInfo = userInfoServiceImp.findByUserName(username);
-        return userInfo.toString();
+        return new ResultJSON(200, true, "获取用户信息成功！", userInfo.toString()).toString();
     }
 
     @RequestMapping("/role")
@@ -77,7 +80,7 @@ public class UserController {
         try {
             roleApplyServiceImp.applyMonitor(username);
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
         return new ResultJSON(200, true, "成功发出MONITOR权限申请！", null).toString();
     }
@@ -122,7 +125,7 @@ public class UserController {
         try {
             roleApplyServiceImp.agreeApplyRole(roleApply);
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
         return new ResultJSON(200, true, "同意权限申请成功！", null).toString();
     }
@@ -134,10 +137,11 @@ public class UserController {
         try {
             roleApplyServiceImp.refuseApplyRole(roleApply);
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
         return new ResultJSON(200, true, "拒绝权限申请成功！", null).toString();
     }
+
 
     @RequestMapping("/updateUsersRole")
     @PreAuthorize(value = "hasAnyAuthority('ADMIN')")
@@ -146,7 +150,7 @@ public class UserController {
         try {
             userServiceImp.changeRoleByUsername(user.getUsername(), user.getRole());
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
         return new ResultJSON(200, true, "修改用户权限成功！", null).toString();
     }
@@ -158,7 +162,7 @@ public class UserController {
         try {
             userServiceImp.deleteUser(user);
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
         return new ResultJSON(200, true, "删除用户成功！", null).toString();
     }
@@ -170,13 +174,48 @@ public class UserController {
         String username = JwtTokenUtils.getUsername(token);
         userInfo.setUsername(username);
         try {
-            userInfoServiceImp.getDao().save(userInfo);
+            userInfoServiceImp.updateUserInfo(userInfo);
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
-        return new ResultJSON(200, true, "修改个人信息成功！", null).toString();
+        return new ResultJSON(200, true, "修改个人信息成功！", userInfo.toString()).toString();
     }
 
+    @PreAuthorize(value = "hasAnyAuthority('ADMIN')")
+    @RequestMapping("/updateAdminInfo")
+    public String updateAdminInfo(@RequestBody String json, HttpServletRequest request) {
+        UserInfo userInfo = new Gson().fromJson(json, UserInfo.class);
+        String token = request.getHeader("authorization");
+        String username = JwtTokenUtils.getUsername(token);
+        userInfo.setUsername(username);
+        try {
+            userInfoServiceImp.updateAdminInfo(userInfo);
+        } catch (RuntimeException e) {
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
+        }
+        return new ResultJSON(200, true, "修改个人信息成功！", userInfo.toString()).toString();
+    }
+
+    @PreAuthorize(value = "hasAnyAuthority('ADMIN')")
+    @RequestMapping("/invitationCode")
+    public String invitationCode() {
+        InvitationCode invitationCode = invitationCodeServiceImp.getInvitationCode();
+        return new ResultJSON(200, true, "获取邀请码成功！", invitationCode.toString()).toString();
+    }
+
+    @PreAuthorize(value = "hasAnyAuthority('ADMIN')")
+    @RequestMapping("/updateInvitationCode")
+    public String updateInvitationCode(@RequestBody String json) {
+        try {
+            JsonObject jsonObject = new Gson().fromJson(json, JsonObject.class);
+            String invitationCode = jsonObject.get("invitationCode").getAsString();
+            invitationCodeServiceImp.save(invitationCode);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
+        }
+        return new ResultJSON(200, true, "修改邀请码成功！", null).toString();
+    }
 
     /**
      * 注册驾驶员接口
@@ -194,7 +233,7 @@ public class UserController {
         try {
             operatorApplyServiceImp.applyOperator(operator);
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
         return new ResultJSON(200, true, "申请驾驶员成功！", null).toString();
     }
@@ -215,7 +254,7 @@ public class UserController {
         try {
             operatorApplyServiceImp.updateOperator(operator);
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
         return new ResultJSON(200, true, "修改申请成功！", null).toString();
     }
@@ -273,7 +312,7 @@ public class UserController {
             OperatorApply operatorApply = new Gson().fromJson(json, OperatorApply.class);
             operatorApplyServiceImp.agreeApply(operatorApply);
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
         return new ResultJSON(200, true, "同意驾驶员申请！", null).toString();
     }
@@ -285,7 +324,7 @@ public class UserController {
         try {
             operatorApplyServiceImp.refuseApply(operatorApply);
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
         return new ResultJSON(200, true, "拒绝驾驶员申请！", null).toString();
     }
@@ -297,7 +336,7 @@ public class UserController {
         try {
             operatorServiceImp.deleteOperator(operator);
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
         return new ResultJSON(200, true, "删除驾驶员成功！", null).toString();
     }
@@ -309,7 +348,7 @@ public class UserController {
             Operator operator = new Gson().fromJson(json, Operator.class);
             operatorServiceImp.addOperator(operator);
         } catch (RuntimeException e) {
-            return new ResultJSON(200, false, e.getMessage(), null).toString();
+            return new ResultJSON(200, false, JsonHelper.replaceIllegalChar(e.getMessage()), null).toString();
         }
         return new ResultJSON(200, true, "注册驾驶员失败！", null).toString();
     }

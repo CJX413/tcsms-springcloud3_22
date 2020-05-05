@@ -69,9 +69,7 @@
         <el-switch
           v-model="props.row.isRegistered"
           active-color="#13ce66"
-          inactive-color="#ff4949"
-          active-value="1"
-          inactive-value="0">
+          inactive-color="#ff4949">
         </el-switch>
       </template>
     </el-table-column>
@@ -116,8 +114,10 @@
       initTableData() {
         this.axios.post('/deviceInfo', {})
           .then((response) => {
-            this.tableData = response.data;
             console.log(response.data);
+            if (response.data.success === true) {
+              this.tableData = response.data.result;
+            }
           });
       },
       handleEdit(row) {
@@ -136,8 +136,9 @@
                     type: 'success',
                     message: '修改成功!'
                   });
+                  this.restartMonitorSystem();
                 } else {
-                  this.$message.error('修改失败!' + '报错信息：' + response.data.message);
+                  this.utils.alertErrorMessage('修改失败！', response.data.message);
                 }
               });
           }).catch(() => {
@@ -166,8 +167,9 @@
                     type: 'success',
                     message: '删除成功!'
                   });
+                  this.restartMonitorSystem();
                 } else {
-                  this.$message.error('删除失败!' + '报错信息：' + response.data.message);
+                  this.utils.alertErrorMessage('删除失败！', response.data.message);
                 }
               });
           }).catch(() => {
@@ -183,6 +185,28 @@
       rowIsNotNull(row) {
         return (row.isRegistered !== '' && row.rlt !== '' && row.bigHeight !== ''
           && row.smallHeight !== '' && row.bigLength !== '' && row.smallLength !== '');
+      },
+      restartMonitorSystem() {
+        if (this.$store.state.monitorStatus.switch === true) {
+          this.$confirm('进行此操作需要重启监控系统, 是否继续?', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '稍后',
+            type: 'warning'
+          }).then(() => {
+            this.axios.post('/restartSecuritySystem', {})
+              .then((response) => {
+                if (response.data.success === true) {
+                  this.$message({
+                    message: '重启系统成功！',
+                    type: 'success'
+                  });
+                } else {
+                  this.utils.alertErrorMessage('重启失败！', response.data.message)
+                }
+              });
+          }).catch(() => {
+          });
+        }
       },
     },
   }

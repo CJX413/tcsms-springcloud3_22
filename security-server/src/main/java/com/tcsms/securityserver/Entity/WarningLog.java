@@ -2,11 +2,11 @@ package com.tcsms.securityserver.Entity;
 
 import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -43,9 +43,25 @@ public class WarningLog {
                 Objects.equals(time, that.time);
     }
 
+    @Override
+    public String toString() {
+        String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(this.time);
+        return "{" +
+                "\"code\":" + code + "," +
+                "\"message\":" + "\"" + message + "\"" + "," +
+                "\"time\":" + "\"" + time + "\"" + "," +
+                "\"data\":" + warningDetails.toString() +
+                "}";
+    }
 
     @Override
     public int hashCode() {
-        return Objects.hash(code, message, id, time);
+        int hash = code;
+        if (warningDetails != null) {
+            for (WarningDetail warningDetail : warningDetails) {
+                hash = hash + warningDetail.getDeviceId().hashCode();
+            }
+        }
+        return hash;
     }
 }

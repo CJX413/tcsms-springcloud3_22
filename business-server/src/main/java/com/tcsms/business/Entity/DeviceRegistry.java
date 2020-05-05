@@ -16,8 +16,8 @@ public class DeviceRegistry implements Serializable {
     @Id
     @Column(name = "deviceId")
     private String deviceId;
-    @Column(name = "isRegistered")
-    private String isRegistered;
+    @Column(name = "isRegistered", columnDefinition = "bit(1) default 0")
+    private Boolean isRegistered;
     @Column(name = "deviceModel")
     private String deviceModel;
     @Column(name = "longitude")
@@ -61,7 +61,7 @@ public class DeviceRegistry implements Serializable {
     public String toString() {
         return "{" +
                 "\"deviceId\":" + "\"" + deviceId + "\"" + "," +
-                "\"isRegistered\":" + "\"" + isRegistered + "\"" + "," +
+                "\"isRegistered\":" + isRegistered + "," +
                 "\"deviceModel\":" + "\"" + deviceModel + "\"" + "," +
                 "\"longitude\":" + longitude + "," +
                 "\"latitude\":" + latitude + "," +

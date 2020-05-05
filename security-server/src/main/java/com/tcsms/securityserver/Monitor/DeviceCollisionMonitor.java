@@ -7,7 +7,6 @@ import com.tcsms.securityserver.Config.ExceptionInfo;
 import com.tcsms.securityserver.Config.WarningInfo;
 import com.tcsms.securityserver.Entity.DeviceRegistry;
 import com.tcsms.securityserver.Entity.OperationLog;
-import com.tcsms.securityserver.Exception.SendWarningFailedException;
 import com.tcsms.securityserver.Service.ServiceImp.RedisServiceImp;
 import com.tcsms.securityserver.Service.ServiceImp.RestTemplateServiceImp;
 import com.tcsms.securityserver.Utils.SpringUtil;
@@ -64,11 +63,16 @@ public class DeviceCollisionMonitor extends TcsmsMonitor {
         return geodeticCalculator.calculateGeodeticCurve(Ellipsoid.Sphere, source, target).getEllipsoidalDistance();
     }
 
+    /**
+     * 以北为0度顺时针为正方向
+     *
+     * @return
+     */
     public double getBearing() {
-        double longitudeFrom = device_2.getLongitude();
-        double longitudeTo = device_1.getLongitude();
-        double latitudeFrom = Math.toRadians(device_2.getLatitude());
-        double latitudeTo = Math.toRadians(device_1.getLatitude());
+        double longitudeFrom = device_1.getLongitude();
+        double longitudeTo = device_2.getLongitude();
+        double latitudeFrom = Math.toRadians(device_1.getLatitude());
+        double latitudeTo = Math.toRadians(device_2.getLatitude());
         double longDiff = Math.toRadians(longitudeTo - longitudeFrom);
         double y = Math.sin(longDiff) * Math.cos(latitudeTo);
         double x = Math.cos(latitudeFrom) * Math.sin(latitudeTo) - Math.sin(latitudeFrom) * Math.cos(latitudeTo) * Math.cos(longDiff);
@@ -134,6 +138,7 @@ public class DeviceCollisionMonitor extends TcsmsMonitor {
                         List<WarningInfo> warningInfos = isWarning();
                         if (!warningInfos.isEmpty()) {
                             for (WarningInfo warningInfo : warningInfos) {
+                                log.info("发送警报----------------");
                                 sendWarning(warningInfo, getData());
                             }
                         }
@@ -142,6 +147,7 @@ public class DeviceCollisionMonitor extends TcsmsMonitor {
                         setNotRunningTimes(newNotRunningTimes);
                     }
                 } else {
+                    setLastOperationLogHashCode(0);
                     int newNotRunningTimes = getNotRunningTimes() + 1;
                     setNotRunningTimes(newNotRunningTimes);
                 }
@@ -149,8 +155,6 @@ public class DeviceCollisionMonitor extends TcsmsMonitor {
             }
         } catch (InterruptedException e) {
             sendException(ExceptionInfo.DEVICE_COLLISION_MONITOR_STOP, getData());
-        } catch (SendWarningFailedException e) {
-            sendException(ExceptionInfo.DEVICE_COLLISION_MONITOR_SEND_WARNING, getData());
         } finally {
             jedis.close();
         }
@@ -173,8 +177,8 @@ public class DeviceCollisionMonitor extends TcsmsMonitor {
      */
     @Override
     public boolean isRunning() {
-        if ((operationLog_device_1.hashCode() + operationLog_device_2.hashCode()) != lastOperationLogHashCode) {
-            lastOperationLogHashCode = operationLog_device_1.hashCode() + operationLog_device_2.hashCode();
+        if ((operationLog_device_1.hashCode() + operationLog_device_2.hashCode()) != getLastOperationLogHashCode()) {
+            setLastOperationLogHashCode(operationLog_device_1.hashCode() + operationLog_device_2.hashCode());
             return true;
         }
         return false;
@@ -183,21 +187,21 @@ public class DeviceCollisionMonitor extends TcsmsMonitor {
     /**
      * 用于暂停时线程外部判断是否在运行
      *
-     * @param devices
+     * @param
      * @return
      */
-    public boolean isRunning(List<String> devices) {
+    @Override
+    public boolean isRunningWhenPause() {
         Gson gson = new Gson();
         int hashCode = 0;
-        OperationLog operationLog;
-        for (String device : devices) {
-            String value = redisServiceImp.get(device);
-            if (value != null) {
-                operationLog = gson.fromJson(redisServiceImp.get(device), OperationLog.class);
-                hashCode = hashCode + operationLog.hashCode();
-            }
+        String value1 = redisServiceImp.get(device_1.getDeviceId());
+        String value2 = redisServiceImp.get(device_2.getDeviceId());
+        if (value1 != null && value2 != null) {
+            OperationLog operationLog1 = gson.fromJson(value1, OperationLog.class);
+            OperationLog operationLog2 = gson.fromJson(value2, OperationLog.class);
+            hashCode = operationLog1.hashCode() + operationLog2.hashCode();
         }
-        return hashCode != lastOperationLogHashCode;
+        return hashCode != getLastOperationLogHashCode();
     }
 
 }

@@ -2,12 +2,14 @@ package com.tcsms.business.Controller;
 
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.tcsms.business.Entity.DeviceRegistry;
 import com.tcsms.business.Entity.OperationLog;
 import com.tcsms.business.JSON.SendJSON;
-import com.tcsms.business.Service.ReceiveServiceImp.OperationLogDateServiceImp;
-import com.tcsms.business.Service.ReceiveServiceImp.RedisServiceImp;
-import com.tcsms.business.Service.ReceiveServiceImp.UserServiceImp;
+import com.tcsms.business.Service.ReceiveServiceImp.*;
+import com.tcsms.business.Utils.JsonHelper;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,7 +26,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Log4j2
 @Component
@@ -56,6 +57,14 @@ public class WebSocket {
     private UserServiceImp userServiceImp;
     @Autowired
     private OperationLogDateServiceImp operationLogDateServiceImp;
+    @Autowired
+    private OperationLogServiceImp operationLogServiceImp;
+    @Autowired
+    private DeviceRegistryServiceImp deviceRegistryServiceImp;
+
+    public static final int REFRESH_DATA_COUNT = 100;
+    public static final int LIMIT_DATA_COUNT = 600;
+    public static final int SLEEP_TIME = 500;
 
     @OnOpen
     public void OnOpen(Session session, @PathParam(value = "name") String name) {
@@ -69,10 +78,8 @@ public class WebSocket {
 
     @OnClose
     public void OnClose() {
-        log.info(this.name);
-        log.info(webSocketSet.get(this.name) == null);
         webSocketSet.remove(this.name);
-        log.info("[WebSocket] 退出成功，当前连接人数为：={}", webSocketSet.size());
+        log.info(this.name + "[WebSocket] 退出成功，当前连接人数为：={}", webSocketSet.size());
     }
 
     @OnMessage
@@ -99,7 +106,10 @@ public class WebSocket {
     public void GroupSending(String message) {
         for (String name : webSocketSet.keySet()) {
             try {
-                webSocketSet.get(name).session.getBasicRemote().sendText(message);
+                Session session = webSocketSet.get(name).session;
+                synchronized (session) {
+                    session.getBasicRemote().sendText(message);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -114,12 +124,15 @@ public class WebSocket {
      */
     public void AppointSending(String name, String message) {
         try {
-            //log.info(name + "发送消息成功" + "=>" + message);
-            log.info(webSocketSet.get(name) == null);
-            webSocketSet.get(name).session.getBasicRemote().sendText(message);
+            Session session = webSocketSet.get(name).session;
+            synchronized (session) {
+                log.info(name + "发送消息成功" + "=>" + message);
+                session.getBasicRemote().sendText(message);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 
     public void sendToAllUser(String message) {
@@ -128,13 +141,21 @@ public class WebSocket {
         }
     }
 
-    public void sendWarningToMonitor(String warningJson) {
+    public void sendWarning(String warningJson) {
+        log.info(warningJson);
         String message = new SendJSON(200, "warning", warningJson).toString();
         for (String key : webSocketSet.keySet()) {
-            if (userServiceImp.isRoleMonitor(key)) {
+            if (userServiceImp.isRoleMonitorOrAdmin(key)) {
                 AppointSending(key, message);
             }
         }
+    }
+
+    public void sendException(String message, String type) {
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("error", JsonHelper.replaceIllegalChar(message));
+        SendJSON sendJSON = new SendJSON(200, type, jsonObject.toString());
+        AppointSending(name, sendJSON.toString());
     }
 
     public void sendMonitorStatusToAdmin(String monitorStatus) {
@@ -146,7 +167,7 @@ public class WebSocket {
         }
     }
 
-    public void closeOperationLogSendThread(String name) {
+    public void closeAllKindOfOperationLogSendThread(String name) {
         Optional.ofNullable(operationLogSendManager.get(name)).ifPresent(thread -> {
             thread.interrupt();
             operationLogSendManager.remove(name);
@@ -158,12 +179,19 @@ public class WebSocket {
             Jedis jedis = redisServiceImp.getJedis();
             try {
                 while (!Thread.interrupted()) {
-                    JsonObject operationLog = new Gson().fromJson(jedis.get(deviceId), JsonObject.class);
-                    SendJSON sendJSON = new SendJSON(200, "operationLog", operationLog.toString());
-                    AppointSending(name, sendJSON.toString());
-                    Thread.sleep(500);
+                    log.info("正在发" + deviceId + "消息给--" + name);
+                    String value = jedis.get(deviceId);
+                    if (value != null) {
+                        JsonObject operationLog = new Gson().fromJson(value, JsonObject.class);
+                        SendJSON sendJSON = new SendJSON(200, "operationLog", operationLog.toString());
+                        AppointSending(name, sendJSON.toString());
+                    }
+                    Thread.sleep(SLEEP_TIME);
                 }
             } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (RuntimeException e) {
+                sendException(e.getMessage(), "operationLog");
                 e.printStackTrace();
             } finally {
                 if (jedis != null) {
@@ -180,29 +208,100 @@ public class WebSocket {
         thread.start();
     }
 
+    public void openAllOperationLogSendThread(String name) {
+        List<DeviceRegistry> devices = deviceRegistryServiceImp.getDao().findByIsRegistered(true);
+        if (devices != null) {
+            Thread thread = new Thread(() -> {
+                Jedis jedis = redisServiceImp.getJedis();
+                Gson gson = new Gson();
+                try {
+                    while (!Thread.interrupted()) {
+                        log.info("正在发所有设备的" + "消息给--" + name);
+                        JsonArray jsonArray = new JsonArray();
+                        devices.forEach(device -> {
+                            String value = jedis.get(device.getDeviceId());
+                            if (value != null) {
+                                jsonArray.add(gson.fromJson(value, JsonElement.class));
+                            }
+                        });
+                        SendJSON sendJSON = new SendJSON(200, "allOperationLog", jsonArray.toString());
+                        AppointSending(name, sendJSON.toString());
+                        Thread.sleep(SLEEP_TIME);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (RuntimeException e) {
+                    sendException(e.getMessage(), "allOperationLog");
+                    e.printStackTrace();
+                } finally {
+                    if (jedis != null) {
+                        jedis.close();
+                    }
+                }
+            });
+            Optional.ofNullable(operationLogSendManager.getOrDefault(name, null))
+                    .ifPresent(oldThread -> {
+                        oldThread.interrupt();
+                        operationLogSendManager.remove(name);
+                    });
+            operationLogSendManager.put(name, thread);
+            thread.start();
+        }
+    }
+
+
     public void openOperationLogDateSendThread(String name, String deviceId, String time) throws ParseException {
         Date datetime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(time);
         String date = new SimpleDateFormat("yyyy_MM_dd").format(datetime);
-        Deque<OperationLog> deque=new ArrayDeque<>();
-        Thread thread = new Thread(() -> {
-            try {
-                operationLogDateServiceImp.queryOperationLogDateByDeviceIdAndTime(deque, deviceId, time, date);
-                while (!Thread.interrupted()) {
-                    log.info("消息队列的长度为："+deque.size());
-                    if (deque.size() < 50)
-                        operationLogDateServiceImp.refreshOperationLogDateQueue(deque, deviceId, date);
-                    Optional.ofNullable(deque.pollFirst()).ifPresent(operationLog -> {
-                        SendJSON sendJSON = new SendJSON(200, "operationLogDate", operationLog.toString());
-                        AppointSending(name, sendJSON.toString());
-                    });
-                    Thread.sleep(500);
+        Deque<OperationLog> deque = new ArrayDeque<>();
+        Thread thread;
+        if (new SimpleDateFormat("yyyy_MM_dd").format(new Date()).equals(date)) {
+            thread = new Thread(() -> {
+                try {
+                    operationLogServiceImp.queryOperationLogByDeviceIdAndTime(deque, deviceId, time);
+                    while (!Thread.interrupted()) {
+                        log.info("消息队列的长度为：" + deque.size());
+                        if (deque.size() < REFRESH_DATA_COUNT)
+                            operationLogServiceImp.refreshOperationLogQueue(deque, deviceId);
+                        Optional.ofNullable(deque.pollFirst()).ifPresent(operationLog -> {
+                            SendJSON sendJSON = new SendJSON(200, "operationLogDate", operationLog.toString());
+                            AppointSending(name, sendJSON.toString());
+                        });
+                        Thread.sleep(SLEEP_TIME);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (RuntimeException e) {
+                    sendException(e.getMessage(), "operationLogDate");
+                    e.printStackTrace();
+                } finally {
+                    deque.clear();
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                deque.clear();
-            }
-        });
+            });
+        } else {
+            thread = new Thread(() -> {
+                try {
+                    operationLogDateServiceImp.queryOperationLogDateByDeviceIdAndTime(deque, deviceId, time, date);
+                    while (!Thread.interrupted()) {
+                        log.info("消息队列的长度为：" + deque.size());
+                        if (deque.size() < REFRESH_DATA_COUNT)
+                            operationLogDateServiceImp.refreshOperationLogDateQueue(deque, deviceId, date);
+                        Optional.ofNullable(deque.pollFirst()).ifPresent(operationLog -> {
+                            SendJSON sendJSON = new SendJSON(200, "operationLogDate", operationLog.toString());
+                            AppointSending(name, sendJSON.toString());
+                        });
+                        Thread.sleep(SLEEP_TIME);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (RuntimeException e) {
+                    sendException(e.getMessage(), "operationLogDate");
+                    e.printStackTrace();
+                } finally {
+                    deque.clear();
+                }
+            });
+        }
         Optional.ofNullable(operationLogSendManager.getOrDefault(name, null))
                 .ifPresent(oldThread -> {
                     oldThread.interrupt();
@@ -212,11 +311,94 @@ public class WebSocket {
         thread.start();
     }
 
-    public void closeOperationLogDateSendThread(String name) {
-        Optional.ofNullable(operationLogSendManager.get(name)).ifPresent(thread -> {
-            thread.interrupt();
-            operationLogSendManager.remove(name);
-        });
+    public void openAllOperationLogDateSendThread(String name, String time) throws ParseException {
+        Date datetime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(time);
+        String date = new SimpleDateFormat("yyyy_MM_dd").format(datetime);
+        List<DeviceRegistry> devices = deviceRegistryServiceImp.getDao().findByIsRegistered(true);
+        ConcurrentHashMap<String, ConcurrentHashMap<Long, OperationLog>> hashMap = new ConcurrentHashMap<>();
+        if (devices != null) {
+            Thread thread;
+            if (new SimpleDateFormat("yyyy_MM_dd").format(new Date()).equals(date)) {
+                //发送当天的历史记录
+                operationLogServiceImp.queryAllDeviceOperationLogDateByDeviceIdAndTime(hashMap, devices, time);
+                thread = new Thread(() -> {
+                    try {
+                        int i = 0;
+                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        Gson gson = new Gson();
+                        Long newDatetime = datetime.getTime();
+                        while (!Thread.interrupted()) {
+                            String newTime = simpleDateFormat.format(newDatetime);
+                            if (i > LIMIT_DATA_COUNT - REFRESH_DATA_COUNT)
+                                operationLogServiceImp.refreshAllDeviceOperationLogDateHashMap(hashMap, devices, newTime);
+                            JsonArray jsonArray = new JsonArray();
+                            for (Map.Entry<String, ConcurrentHashMap<Long, OperationLog>> entry : hashMap.entrySet()) {
+                                OperationLog operationLog = entry.getValue().getOrDefault(newDatetime, null);
+                                if (operationLog != null) {
+                                    jsonArray.add(gson.fromJson(operationLog.toString(), JsonElement.class));
+                                }
+                            }
+                            JsonObject jsonObject = new JsonObject();
+                            jsonObject.add("data", jsonArray);
+                            jsonObject.addProperty("time", newTime);
+                            SendJSON sendJSON = new SendJSON(200, "allOperationLogDate", jsonObject.toString());
+                            AppointSending(name, sendJSON.toString());
+                            newDatetime = newDatetime + 1000;
+                            i = (i + 1) % LIMIT_DATA_COUNT;
+                            Thread.sleep(SLEEP_TIME);
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (ParseException e) {
+                        sendException(e.getMessage(), "allOperationLogDate");
+                        e.printStackTrace();
+                    }
+                });
+            } else {
+                //发送往日的历史记录
+                operationLogDateServiceImp.queryAllDeviceOperationLogDateByDeviceIdAndTime(hashMap, devices, time, date);
+                thread = new Thread(() -> {
+                    try {
+                        int i = 0;
+                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        Gson gson = new Gson();
+                        while (!Thread.interrupted()) {
+                            Long newDatetime = datetime.getTime() + 1000;
+                            String newTime = simpleDateFormat.format(newDatetime);
+                            if (i > REFRESH_DATA_COUNT)
+                                operationLogDateServiceImp.refreshAllDeviceOperationLogDateHashMap(hashMap, devices, newTime, date);
+                            JsonArray jsonArray = new JsonArray();
+                            hashMap.forEach((key, value) -> {
+                                OperationLog operationLog = value.getOrDefault(newDatetime, null);
+                                if (operationLog != null) {
+                                    jsonArray.add(gson.fromJson(operationLog.toString(), JsonElement.class));
+                                }
+                            });
+                            JsonObject jsonObject = new JsonObject();
+                            jsonObject.add("data", jsonArray);
+                            jsonObject.addProperty("time", newTime);
+                            SendJSON sendJSON = new SendJSON(200, "allOperationLogDate", jsonObject.toString());
+                            AppointSending(name, sendJSON.toString());
+                            i = (i + 1) % LIMIT_DATA_COUNT;
+                            Thread.sleep(SLEEP_TIME);
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (ParseException e) {
+                        sendException(e.getMessage(), "allOperationLogDate");
+                        e.printStackTrace();
+                    }
+                });
+            }
+            Optional.ofNullable(operationLogSendManager.getOrDefault(name, null))
+                    .ifPresent(oldThread -> {
+                        oldThread.interrupt();
+                        operationLogSendManager.remove(name);
+                    });
+            operationLogSendManager.put(name, thread);
+            thread.start();
+        }
     }
+
 
 }

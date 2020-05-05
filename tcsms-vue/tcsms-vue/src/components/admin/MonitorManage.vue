@@ -224,7 +224,7 @@
                 type: 'success'
               });
             } else {
-              this.$message.error('操作失败！' + '报错信息：' + response.data.message);
+              this.utils.alertErrorMessage('操作失败！',response.data.message);
             }
           });
       },
@@ -239,7 +239,7 @@
                 type: 'success'
               });
             } else {
-              this.$message.error('操作失败！' + '报错信息：' + response.data.message);
+              this.utils.alertErrorMessage('操作失败！',response.data.message);
             }
           });
       },
@@ -258,7 +258,7 @@
                   message: '修改成功!'
                 });
               } else {
-                this.$message.error('修改失败!' + '报错信息：' + response.data.message);
+                this.utils.alertErrorMessage('修改失败！',response.data.message);
               }
             });
         }).catch(() => {
@@ -284,7 +284,7 @@
                   message: '删除成功!'
                 });
               } else {
-                this.$message.error('删除失败!' + '报错信息：' + response.data.message);
+                this.utils.alertErrorMessage('删除失败！',response.data.message);
               }
             });
         }).catch(() => {

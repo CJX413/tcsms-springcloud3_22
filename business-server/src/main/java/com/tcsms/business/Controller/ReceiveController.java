@@ -33,11 +33,16 @@ public class ReceiveController {
     @PreAuthorize(value = "hasAnyAuthority('SERVER')")
     @RequestMapping(value = "/receiveWarning", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     public String receiveWarning(@RequestBody String json) {
-        log.info("接收到警报warning---------------");
-        webSocket.sendWarningToMonitor(json);
-        txCloudSmsServiceImp.sendWarningToMonitor(json);
+        log.info("接收到警报warning---------------" + json);
+        webSocket.sendWarning(json);
+        try {
+            //txCloudSmsServiceImp.sendWarning(json);
+        } catch (Exception e) {
+            webSocket.sendWarning("群发短信失败！" + e.getMessage());
+        }
         return new ResultJSON(200, true, "接收到报警信号！", null).toString();
     }
+
     /**
      * 接收监控器状态的接口
      *

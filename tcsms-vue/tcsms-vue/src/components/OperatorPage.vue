@@ -177,7 +177,7 @@
               });
               setTimeout(this.initPage(), 1000);
             } else {
-              this.$message.error('修改申请失败！' + '报错信息:' + response.data.message);
+              this.utils.alertErrorMessage('修改申请失败！',response.data.message);
             }
           });
         } else {
@@ -200,7 +200,7 @@
               });
               setTimeout(this.initPage(), 1000);
             } else {
-              this.$message.error('申请驾驶员失败！' + '报错信息:' + response.data.message);
+              this.utils.alertErrorMessage('申请驾驶员失败！',response.data.message);
             }
           });
         } else {

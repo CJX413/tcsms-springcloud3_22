@@ -7,7 +7,6 @@ import com.tcsms.securityserver.Config.ExceptionInfo;
 import com.tcsms.securityserver.Config.WarningInfo;
 import com.tcsms.securityserver.Entity.DeviceRegistry;
 import com.tcsms.securityserver.Entity.OperationLog;
-import com.tcsms.securityserver.Exception.SendWarningFailedException;
 import com.tcsms.securityserver.Service.ServiceImp.RedisServiceImp;
 import com.tcsms.securityserver.Service.ServiceImp.RestTemplateServiceImp;
 import com.tcsms.securityserver.Utils.SpringUtil;
@@ -15,8 +14,10 @@ import lombok.extern.log4j.Log4j2;
 import redis.clients.jedis.Jedis;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Log4j2
 public class OtherMonitor extends TcsmsMonitor {
@@ -30,9 +31,9 @@ public class OtherMonitor extends TcsmsMonitor {
     private OperationLog operationLog;
 
     private Double rlt;
-    private Map<String, String> operator;
+    private HashMap<String, String> operator;
 
-    public OtherMonitor(DeviceRegistry device, Map<String, String> operator) {
+    public OtherMonitor(DeviceRegistry device, HashMap<String, String> operator) {
         super(THREAD_PREFIX + device.getDeviceId());
         this.device = device;
         this.rlt = device.getRlt();
@@ -65,6 +66,7 @@ public class OtherMonitor extends TcsmsMonitor {
                         setNotRunningTimes(newNotRunningTimes);
                     }
                 } else {
+                    setLastOperationLogHashCode(0);
                     int newNotRunningTimes = getNotRunningTimes() + 1;
                     setNotRunningTimes(newNotRunningTimes);
                 }
@@ -72,8 +74,6 @@ public class OtherMonitor extends TcsmsMonitor {
             }
         } catch (InterruptedException e) {
             sendException(ExceptionInfo.OTHER_MONITOR_STOP, getData());
-        } catch (SendWarningFailedException e) {
-            sendException(ExceptionInfo.OTHER_MONITOR_SEND_WARNING, getData());
         } finally {
             jedis.close();
         }
@@ -83,7 +83,6 @@ public class OtherMonitor extends TcsmsMonitor {
 
     public List<WarningInfo> isWarning() {
         List<WarningInfo> warning = new ArrayList<>();
-        String name = operator.getOrDefault(operationLog.getWorkerId(), "");
         if (operationLog.getTorque() / rlt > SAFE_TORQUE) {
             warning.add(WarningInfo.TORQUE_YELLOW_WARNING);
         }
@@ -96,7 +95,7 @@ public class OtherMonitor extends TcsmsMonitor {
         if (operationLog.getWindVelocity() >= STRONG_BREEZE) {
             warning.add(WarningInfo.WIND_VELOCITY_RED_WARNING);
         }
-        if (!operationLog.getOperator().equals(name)) {
+        if (operator.getOrDefault(operationLog.getWorkerId(), null) == null) {
             warning.add(WarningInfo.OPERATOR_RED_WARNING);
         }
         return warning;
@@ -118,8 +117,8 @@ public class OtherMonitor extends TcsmsMonitor {
      */
     @Override
     public boolean isRunning() {
-        if (operationLog.hashCode() != lastOperationLogHashCode) {
-            lastOperationLogHashCode = operationLog.hashCode();
+        if (operationLog.hashCode() != getLastOperationLogHashCode()) {
+            setLastOperationLogHashCode(operationLog.hashCode());
             return true;
         }
         return false;
@@ -128,22 +127,19 @@ public class OtherMonitor extends TcsmsMonitor {
     /**
      * 用于暂停时线程外部判断是否在运行
      *
-     * @param devices
+     * @param
      * @return
      */
-    public boolean isRunning(List<String> devices) {
+    @Override
+    public boolean isRunningWhenPause() {
         Gson gson = new Gson();
-        long hashCode = 0;
-        boolean overWindVelocity = false;
-        for (String device : devices) {
-            String value = redisServiceImp.get(device);
-            if (value != null) {
-                OperationLog operationLog = gson.fromJson(redisServiceImp.get(device), OperationLog.class);
-                overWindVelocity = operationLog.getWindVelocity() >= MODERATE_BREEZE;
-                hashCode = hashCode + operationLog.hashCode();
-            }
+        int hashCode = 0;
+        String value = redisServiceImp.get(device.getDeviceId());
+        if (value != null) {
+            OperationLog operationLog1 = gson.fromJson(value, OperationLog.class);
+            hashCode = operationLog1.hashCode();
         }
-        return (hashCode != lastOperationLogHashCode) || overWindVelocity;
+        return hashCode != getLastOperationLogHashCode();
     }
 
 }

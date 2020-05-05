@@ -15,7 +15,7 @@ import java.util.List;
 public class ManagerMonitor extends TcsmsMonitor {
     private final static String THREAD_PREFIX = "管理监听器";
 
-    private final static long ALLOWED_NOT_RUNNING_TIMES = 20;//设备多久不运行就休眠监控器---1800000(半个小时)
+    private final static long ALLOWED_NOT_RUNNING_TIMES = 3600;//设备多久不运行就休眠监控器---1800000(半个小时)
 
     private int lastMonitorStatus = 0;
 
@@ -36,21 +36,22 @@ public class ManagerMonitor extends TcsmsMonitor {
                     if (monitor.getNotRunningTimes() > ALLOWED_NOT_RUNNING_TIMES) {
                         log.info(monitor.getThreadName() + "--暂停运行！");
                         MonitorManager.pauseMonitorByName(monitor.getThreadName());
-                    }
-                    List<String> devices = monitor.getRelatedDevice();
-                    if (monitor instanceof DeviceCollisionMonitor) {
-                        log.info("DeviceCollisionMonitor-------------");
-                        DeviceCollisionMonitor deviceCollisionMonitor = (DeviceCollisionMonitor) monitor;
-                        if (deviceCollisionMonitor.isRunning(devices)) {
-                            MonitorManager.notifyMonitorByName(deviceCollisionMonitor.getThreadName());
-                            deviceCollisionMonitor.setNotRunningTimes(0);
-                        }
-                    } else if (monitor instanceof OtherMonitor) {
-                        log.info("OtherMonitor-------------");
-                        OtherMonitor otherMonitor = (OtherMonitor) monitor;
-                        if (otherMonitor.isRunning(devices)) {
-                            MonitorManager.notifyMonitorByName(otherMonitor.getThreadName());
-                            otherMonitor.setNotRunningTimes(0);
+                        //当监控器暂停时，判断是否设备重新运行，来唤醒监控器
+                        if (monitor instanceof DeviceCollisionMonitor) {
+                            log.info("DeviceCollisionMonitor-------------");
+                            DeviceCollisionMonitor deviceCollisionMonitor = (DeviceCollisionMonitor) monitor;
+                            if (deviceCollisionMonitor.isRunningWhenPause()) {
+                                MonitorManager.notifyMonitorByName(deviceCollisionMonitor.getThreadName());
+                                deviceCollisionMonitor.setNotRunningTimes(0);
+                            }
+                        } else if (monitor instanceof OtherMonitor) {
+                            log.info("OtherMonitor-------------");
+                            OtherMonitor otherMonitor = (OtherMonitor) monitor;
+                            if (otherMonitor.isRunningWhenPause()) {
+                                MonitorManager.notifyMonitorByName(otherMonitor.getThreadName());
+                                otherMonitor.setNotRunningTimes(0);
+                            }
+
                         }
                     }
                 }
@@ -79,6 +80,11 @@ public class ManagerMonitor extends TcsmsMonitor {
     @Override
     public boolean isRunning() {
         return true;
+    }
+
+    @Override
+    boolean isRunningWhenPause() {
+        return false;
     }
 
 }

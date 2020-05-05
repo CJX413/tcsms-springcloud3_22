@@ -41,6 +41,18 @@
               clearable>
             </el-input>
           </el-row>
+          <el-row style="padding-top: 20px">
+            <el-switch
+              style="display: block"
+              v-model="userInfoForm.sex"
+              active-color="#ff4949"
+              inactive-color="#409EFF"
+              active-text="女"
+              inactive-text="男"
+              active-value="女"
+              inactive-value="男">
+            </el-switch>
+          </el-row>
         </div>
       </el-card>
     </el-col>
@@ -68,17 +80,18 @@
         },
       };
     },
+    computed: {
+      userInfo() {
+        return this.$store.state.userInfo;
+      }
+    },
     mounted() {
       this.initPage();
       this.initRoleButton();
     },
     methods: {
       initPage() {
-        this.axios.post('/userInfo', {})
-          .then((response) => {
-            console.log(response.data);
-            this.userInfoForm = response.data;
-          });
+        this.userInfoForm = JSON.parse(JSON.stringify(this.$store.state.userInfo));
       },
       async initRoleButton() {
         let roleResult = await new Promise((resolve, reject) => {
@@ -114,29 +127,41 @@
             confirmButtonText: '确定',
           });
         } else {
-          this.axios.post('/applyMonitor', {})
-            .then((response) => {
-              if (response.data.success === true) {
-                this.$message({
-                  message: '成功发出MONITOR权限申请！',
-                  type: 'success'
-                });
-              } else {
-                this.$message.error('发出申请失败！' + '报错信息：' + response.data.message);
-              }
+          this.$confirm('在申请权限之前请确保您的身份信息真实！', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => {
+            this.axios.post('/applyMonitor', {})
+              .then((response) => {
+                if (response.data.success === true) {
+                  this.$message({
+                    message: '成功发出MONITOR权限申请！',
+                    type: 'success'
+                  });
+                } else {
+                  this.utils.alertErrorMessage('发出申请失败！', response.data.message);
+                }
+              });
+          }).catch(() => {
+            this.$message({
+              type: 'info',
+              message: '已取消申请'
             });
+          });
         }
       },
       update() {
         this.axios.post('/updateUserInfo', this.userInfoForm)
           .then((response) => {
             if (response.data.success === true) {
+              this.$store.state.userInfo = response.data.result;
               this.$message({
                 message: '修改个人信息成功！',
                 type: 'success'
               });
             } else {
-              this.$message.error('修改个人信息失败！' + '报错信息：' + response.data.message);
+              this.utils.alertErrorMessage('修改个人信息失败！', response.data.message);
             }
           });
       },

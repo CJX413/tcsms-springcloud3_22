@@ -29,10 +29,6 @@ public interface DeviceRegistryDao extends JpaRepository<DeviceRegistry, String>
             "where dr.deviceId = :#{#deviceRegistry.deviceId}")
     int update(@Param("deviceRegistry") DeviceRegistry deviceRegistry);
 
-//    @Modifying
-//    @Transactional
-//    @Query("update DeviceRegistry dr set dr.isRegistered=:#{#isRegistered} where dr.deviceId = :#{#deviceId}")
-//    int deviceRegister(@Param("deviceId") String deviceId, @Param("isRegistered") String isRegistered);
 
-    List<DeviceRegistry> findByIsRegistered(String isRegistered);
+    List<DeviceRegistry> findByIsRegistered(Boolean isRegistered);
 }

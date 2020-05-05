@@ -1,5 +1,7 @@
 <template>
   <el-card class="register-box">
+    <el-page-header @back="goBack">
+    </el-page-header>
     <span class="register-title">注册</span>
     <el-form label-position="right" :model="registerForm" status-icon :rules="registerRules" ref="registerForm"
              label-width="100px"
@@ -10,13 +12,13 @@
         <el-row>
           <el-col :span="16">
             <el-input v-model="registerForm.phone"
-                      oninput ="value=value.replace(/[^\d]/g,'')"
+                      oninput="value=value.replace(/[^\d]/g,'')"
                       autocomplete="off" maxLength='11'>
             </el-input>
           </el-col>
           <el-col :span="6">
-            <el-button type="primary" size="small" style="padding-left: 5px;padding-right: 5px"
-                       @click="getVerificationCode()">获取验证码
+            <el-button type="primary" size="small" style="padding-left: 5px;padding-right: 5px" :loading="send"
+                       @click="verificationCode()">{{sendButtonView}}
             </el-button>
           </el-col>
         </el-row>
@@ -26,31 +28,33 @@
         prop="verificationCode">
         <el-col :span="8">
           <el-input v-model="registerForm.verificationCode"
-                    oninput ="value=value.replace(/[^\d]/g,'')"
+                    oninput="value=value.replace(/[^\d]/g,'')"
                     maxLength="6"
                     autocomplete="off"></el-input>
         </el-col>
       </el-form-item>
       <el-form-item
         label="邀请码"
-        oninput ="value=value.replace(/[^\a-\z\A-\Z0-9]/g, '')"
-        maxLength="5"
+        maxLength="6"
         prop="invitationCode">
-        <el-input v-model.number="registerForm.invitationCode" autocomplete="off"></el-input>
+        <el-input v-model="registerForm.invitationCode"
+                  oninput="value=value.replace(/[^\d]/g,'')"
+                  maxLength="6"
+                  autocomplete="off"></el-input>
       </el-form-item>
       <el-form-item label="密码" prop="pass">
         <el-input type="password"
                   v-model="registerForm.pass"
-                  oninput ="value=value.replace(/[^\a-\z\A-\Z0-9]/g, '')"
+                  oninput="value=value.replace(/[^\a-\z\A-\Z0-9]/g, '')"
                   autocomplete="off"></el-input>
       </el-form-item>
       <el-form-item label="确认密码" prop="checkPass">
         <el-input type="password" v-model="registerForm.checkPass"
-                  oninput ="value=value.replace(/[^\a-\z\A-\Z0-9]/g, '')"
+                  oninput="value=value.replace(/[^\a-\z\A-\Z0-9]/g, '')"
                   autocomplete="off"></el-input>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="doRegister('registerForm')" style="width: 200px">注册</el-button>
+        <el-button type="primary" @click="doRegister()" style="width: 200px">注册</el-button>
       </el-form-item>
     </el-form>
   </el-card>
@@ -80,6 +84,9 @@
         }
       };
       return {
+        count: 60,
+        send: false,
+        sendButtonView: '获取验证码',
         registerRules: {
           phone: [
             {required: true, message: '手机号不能为空'},
@@ -109,29 +116,62 @@
       }
     },
     methods: {
-      getVerificationCode() {
-        console.log(this.registerForm.phone);
+      verificationCode() {
+        setInterval(() => {
+          if (this.count < 1) {
+            this.send = false;
+            this.sendButtonView = '获取验证码';
+          } else {
+            this.send = true;
+            this.sendButtonView = this.count-- + 's后重发';
+          }
+        }, 1000);
+        this.sendVerificationCode();
+      },
+      sendVerificationCode() {
         if (this.registerForm.phone === '') {
           this.$message.error('手机号不能为空');
         } else {
-          this.axios.post('/auth/login', {})
+          console.log(this.registerForm.phone);
+          this.axios.post('/auth/registerVerificationCode', {
+            phone: this.registerForm.phone,
+          })
             .then((response) => {
-
+              if (response.data.success === true) {
+                this.$message({
+                  message: '发送短信验证码成功！',
+                  type: 'success'
+                });
+              } else {
+                this.utils.alertErrorMessage('发送短信验证码失败！', response.data.message);
+              }
             });
         }
       },
-      doRegister(registerForm) {
-        this.$refs[registerForm].validate((valid) => {
+      doRegister() {
+        this.$refs.registerForm.validate((valid) => {
           if (valid) {
-            this.axios.post('/auth/register', registerForm)
+            this.axios.post('/auth/register', this.registerForm)
               .then((response) => {
-
+                if (response.data.success === true) {
+                  this.$message({
+                    message: '注册成功！',
+                    type: 'success'
+                  });
+                  setTimeout(() => {
+                    this.goBack()
+                  }, 3000);
+                } else {
+                  this.utils.alertErrorMessage("注册账号失败！", response.data.message);
+                }
               });
           } else {
-            console.log('error submit!!');
-            return false;
+            this.$message.error('提交失败！请按规定填写后再提交。');
           }
         });
+      },
+      goBack() {
+        this.$router.push({path: '/auth/login'});
       }
     },
   }

@@ -5,7 +5,7 @@
     </div>
     <el-row>
       <el-col :span="12">
-        <span v-if="device.isRegistered==='1'">是否注册：是</span>
+        <span v-if="device.isRegistered">是否注册：是</span>
         <span v-else>是否注册：否</span>
       </el-col>
       <el-col :span="12"><span>设备型号：{{device.deviceModel}}</span></el-col>
